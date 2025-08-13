@@ -2,17 +2,17 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { AppModule } from './app.module';
-import { PatientService } from './patient/patient.service';
-import { PatientRepository } from './patient/patient.repository';
+import { OrderService } from './services/order.service';
+import { OrderController } from './controllers/order.controller';
+import { Order } from './entities/order.entity';
 
-class PatientMoleculerService {
+class OrderMoleculerService {
   private broker: ServiceBroker;
-  private patientService: PatientService;
+  private orderService: OrderService;
 
   constructor() {
     this.broker = new ServiceBroker({
-      nodeID: 'patient-service',
+      nodeID: 'order-service',
       transporter: process.env.NATS_URI || 'nats://localhost:4222',
       logLevel: 'info',
       metrics: {
@@ -20,7 +20,7 @@ class PatientMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3030,
+            port: 3032,
             path: '/metrics',
           },
         },
@@ -30,7 +30,7 @@ class PatientMoleculerService {
 
   async start() {
     try {
-      console.log('Starting Patient Service...');
+      console.log('Starting Order Service...');
 
       // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
@@ -50,71 +50,70 @@ class PatientMoleculerService {
       // Start NestJS application
       await this.startNestJS();
 
-      console.log('Patient Service started successfully');
+      console.log('Order Service started successfully');
     } catch (error) {
-      console.error('Error starting Patient Service:', error);
+      console.error('Error starting Order Service:', error);
       process.exit(1);
     }
   }
 
   private registerActions() {
-    // Create patient service instance with repository
-    const patientRepository = new PatientRepository();
-    const patientService = new PatientService(patientRepository);
-    patientService.broker = this.broker;
+    // Create order service instance
+    const orderService = new OrderService();
+    orderService.broker = this.broker;
 
-    // Create patient action
+    // Create order action
     this.broker.createService({
-      name: 'patient',
+      name: 'order',
       actions: {
         create: {
           handler: async (ctx: any) => {
-            const { createPatientDto, context } = ctx.params;
-            return await patientService.createPatient(createPatientDto, context);
+            const { createOrderDto, context } = ctx.params;
+            return await orderService.createOrder(createOrderDto, context);
           },
         },
         getById: {
           handler: async (ctx: any) => {
             const { id } = ctx.params;
-            return await patientService.getPatientById(id);
+            return await orderService.getOrderById(id);
           },
         },
         list: {
           handler: async (ctx: any) => {
             const { query } = ctx.params;
-            return await patientService.getPatients(query);
+            return await orderService.getOrders(query);
           },
         },
         update: {
           handler: async (ctx: any) => {
             const { id, updateData, context } = ctx.params;
-            return await patientService.updatePatient(id, updateData, context);
+            return await orderService.updateOrder(id, updateData, context);
           },
         },
         delete: {
           handler: async (ctx: any) => {
             const { id, context } = ctx.params;
-            return await patientService.deletePatient(id, context);
+            return await orderService.deleteOrder(id, context);
           },
         },
       },
       events: {
-        'patient.created': {
+        'order.created': {
           handler: async (ctx: any) => {
-            console.log('Patient created event received:', ctx.params);
-            // Handle patient created event
+            console.log('Order created event received:', ctx.params);
+            // Handle order created event
           },
         },
-        'patient.updated': {
+        'order.updated': {
           handler: async (ctx: any) => {
-            console.log('Patient updated event received:', ctx.params);
-            // Handle patient updated event
+            console.log('Order updated event received:', ctx.params);
+            // Handle order updated event
           },
         },
-        'patient.deleted': {
+        'order.deleted': {
           handler: async (ctx: any) => {
-            console.log('Patient deleted event received:', ctx.params);
-            // Handle patient deleted event
+            console.log('Order deleted event received:', ctx.params);
+            // Handle order deleted event
           },
         },
       },
@@ -122,38 +121,38 @@ class PatientMoleculerService {
   }
 
   private async startNestJS() {
-    try {
-      // Create NestJS application
-      const app = await NestFactory.create(AppModule);
+    // Create a simple Express app instead of NestJS for now
+    const express = require('express');
+    const app = express();
 
-      // Enable CORS
-      app.enableCors({
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-      });
+    // Enable CORS
+    app.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      next();
+    });
 
-      // Global prefix
-      app.setGlobalPrefix('api/v2');
+    // Global prefix
+    app.use('/api/v2', (req, res) => {
+      res.json({ message: 'Order Service is running', timestamp: new Date().toISOString() });
+    });
 
-      // Start HTTP server
-      const port = process.env.PATIENT_SERVICE_PORT || 3002;
-      await app.listen(port);
-      console.log(`Patient Service listening on port ${port}`);
-    } catch (error) {
-      console.error('Error starting NestJS application:', error);
-      throw error;
-    }
+    // Start HTTP server
+    const port = process.env.ORDER_SERVICE_PORT || 3004;
+    app.listen(port, () => {
+      console.log(`Order Service listening on port ${port}`);
+    });
   }
 
   async stop() {
     try {
       await this.broker.stop();
       await disconnect();
-      console.log('Patient Service stopped');
+      console.log('Order Service stopped');
     } catch (error) {
-      console.error('Error stopping Patient Service:', error);
+      console.error('Error stopping Order Service:', error);
     }
   }
 }
@@ -172,8 +171,8 @@ process.on('SIGTERM', async () => {
 });
 
 // Start the service
-const service = new PatientMoleculerService();
+const service = new OrderMoleculerService();
 service.start().catch(error => {
-  console.error('Failed to start Patient Service:', error);
+  console.error('Failed to start Order Service:', error);
   process.exit(1);
 });

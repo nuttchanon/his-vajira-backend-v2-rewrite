@@ -2,17 +2,17 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { AppModule } from './app.module';
-import { PatientService } from './patient/patient.service';
-import { PatientRepository } from './patient/patient.repository';
+import { EformService } from './services/eform.service';
+import { EformController } from './controllers/eform.controller';
+import { Eform } from './entities/eform.entity';
 
-class PatientMoleculerService {
+class EformMoleculerService {
   private broker: ServiceBroker;
-  private patientService: PatientService;
+  private eformService: EformService;
 
   constructor() {
     this.broker = new ServiceBroker({
-      nodeID: 'patient-service',
+      nodeID: 'eform-service',
       transporter: process.env.NATS_URI || 'nats://localhost:4222',
       logLevel: 'info',
       metrics: {
@@ -20,7 +20,7 @@ class PatientMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3030,
+            port: 3037,
             path: '/metrics',
           },
         },
@@ -30,7 +30,7 @@ class PatientMoleculerService {
 
   async start() {
     try {
-      console.log('Starting Patient Service...');
+      console.log('Starting Eform Service...');
 
       // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
@@ -50,71 +50,70 @@ class PatientMoleculerService {
       // Start NestJS application
       await this.startNestJS();
 
-      console.log('Patient Service started successfully');
+      console.log('Eform Service started successfully');
     } catch (error) {
-      console.error('Error starting Patient Service:', error);
+      console.error('Error starting Eform Service:', error);
       process.exit(1);
     }
   }
 
   private registerActions() {
-    // Create patient service instance with repository
-    const patientRepository = new PatientRepository();
-    const patientService = new PatientService(patientRepository);
-    patientService.broker = this.broker;
+    // Create eform service instance
+    const eformService = new EformService();
+    eformService.broker = this.broker;
 
-    // Create patient action
+    // Create eform action
     this.broker.createService({
-      name: 'patient',
+      name: 'eform',
       actions: {
         create: {
           handler: async (ctx: any) => {
-            const { createPatientDto, context } = ctx.params;
-            return await patientService.createPatient(createPatientDto, context);
+            const { createEformDto, context } = ctx.params;
+            return await eformService.createEform(createEformDto, context);
           },
         },
         getById: {
           handler: async (ctx: any) => {
             const { id } = ctx.params;
-            return await patientService.getPatientById(id);
+            return await eformService.getEformById(id);
           },
         },
         list: {
           handler: async (ctx: any) => {
             const { query } = ctx.params;
-            return await patientService.getPatients(query);
+            return await eformService.getEforms(query);
           },
         },
         update: {
           handler: async (ctx: any) => {
             const { id, updateData, context } = ctx.params;
-            return await patientService.updatePatient(id, updateData, context);
+            return await eformService.updateEform(id, updateData, context);
           },
         },
         delete: {
           handler: async (ctx: any) => {
             const { id, context } = ctx.params;
-            return await patientService.deletePatient(id, context);
+            return await eformService.deleteEform(id, context);
           },
         },
       },
       events: {
-        'patient.created': {
+        'eform.created': {
           handler: async (ctx: any) => {
-            console.log('Patient created event received:', ctx.params);
-            // Handle patient created event
+            console.log('Eform created event received:', ctx.params);
+            // Handle eform created event
           },
         },
-        'patient.updated': {
+        'eform.updated': {
           handler: async (ctx: any) => {
-            console.log('Patient updated event received:', ctx.params);
-            // Handle patient updated event
+            console.log('Eform updated event received:', ctx.params);
+            // Handle eform updated event
           },
         },
-        'patient.deleted': {
+        'eform.deleted': {
           handler: async (ctx: any) => {
-            console.log('Patient deleted event received:', ctx.params);
-            // Handle patient deleted event
+            console.log('Eform deleted event received:', ctx.params);
+            // Handle eform deleted event
           },
         },
       },
@@ -122,38 +121,38 @@ class PatientMoleculerService {
   }
 
   private async startNestJS() {
-    try {
-      // Create NestJS application
-      const app = await NestFactory.create(AppModule);
+    // Create a simple Express app instead of NestJS for now
+    const express = require('express');
+    const app = express();
 
-      // Enable CORS
-      app.enableCors({
-        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-        credentials: true,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-      });
+    // Enable CORS
+    app.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      next();
+    });
 
-      // Global prefix
-      app.setGlobalPrefix('api/v2');
+    // Global prefix
+    app.use('/api/v2', (req, res) => {
+      res.json({ message: 'Eform Service is running', timestamp: new Date().toISOString() });
+    });
 
-      // Start HTTP server
-      const port = process.env.PATIENT_SERVICE_PORT || 3002;
-      await app.listen(port);
-      console.log(`Patient Service listening on port ${port}`);
-    } catch (error) {
-      console.error('Error starting NestJS application:', error);
-      throw error;
-    }
+    // Start HTTP server
+    const port = process.env.EFORM_SERVICE_PORT || 3009;
+    app.listen(port, () => {
+      console.log(`Eform Service listening on port ${port}`);
+    });
   }
 
   async stop() {
     try {
       await this.broker.stop();
       await disconnect();
-      console.log('Patient Service stopped');
+      console.log('Eform Service stopped');
     } catch (error) {
-      console.error('Error stopping Patient Service:', error);
+      console.error('Error stopping Eform Service:', error);
     }
   }
 }
@@ -172,8 +171,8 @@ process.on('SIGTERM', async () => {
 });
 
 // Start the service
-const service = new PatientMoleculerService();
+const service = new EformMoleculerService();
 service.start().catch(error => {
-  console.error('Failed to start Patient Service:', error);
+  console.error('Failed to start Eform Service:', error);
   process.exit(1);
 });

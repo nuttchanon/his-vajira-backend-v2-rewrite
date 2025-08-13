@@ -1,246 +1,292 @@
-# HIS Backend v2 - Microservice Architecture
+# HIS Vajira Backend V2 - Rewrite
 
-A modern, scalable backend system for Hospital Information System (HIS) built with NestJS, Moleculer, MongoDB, and Redis.
+A modern, production-ready healthcare information system backend built with NestJS, TypeScript, and MongoDB.
 
 ## 🏗️ Architecture Overview
 
-This project implements a **microservice architecture** with the following key components:
+This project follows a **Domain-Driven Design (DDD)** approach with a **microservices architecture**. Each service is organized by domain rather than technical layers, promoting better maintainability and scalability.
 
-- **Framework**: NestJS (for controllers and dependency injection) + Moleculer (for microservices)
-- **Database**: MongoDB with Typegoose ODM
-- **Caching**: Redis for performance optimization
-- **Message Broker**: NATS for inter-service communication
-- **Real-time**: Socket.io integration
-- **Standards**: FHIR/HL7 compliant data models
+### Key Architectural Patterns
+
+- **Domain-Based Structure**: Services are organized by business domains (patient, diagnostic, eform, etc.)
+- **Repository Pattern**: Robust data access layer with reusable base repository
+- **NestJS Modular Architecture**: Proper dependency injection and module organization
+- **Event-Driven Communication**: Inter-service communication via events
+- **Audit Trail**: Comprehensive audit logging for all data changes
 
 ## 📁 Project Structure
 
 ```
 his-vajira-backend-v2-rewrite/
 ├── packages/
-│   └── shared/                 # Shared utilities and types
+│   └── shared/                    # Shared utilities and base classes
 │       ├── src/
-│       │   ├── entities/       # Base entities and FHIR types
-│       │   ├── dto/           # Data transfer objects
-│       │   ├── enums/         # Enumerations
-│       │   └── utils/         # Utility functions
-│       └── package.json
-├── services/
-│   ├── api-gateway/           # API Gateway service
-│   ├── patient-service/       # Patient management service
-│   └── auth-service/          # Authentication service
-├── scripts/
-│   └── mongo-init.js          # MongoDB initialization
-├── docker-compose.yml         # Development environment
-├── package.json              # Root package.json
-└── README.md                 # This file
+│       │   ├── repositories/
+│       │   │   └── base.repository.ts    # Base repository with CRUD operations
+│       │   ├── entities/
+│       │   │   └── base.entity.ts        # Base entity with audit fields
+│       │   ├── dto/
+│       │   │   └── pagination.dto.ts     # Pagination DTOs
+│       │   └── index.ts
+├── services/                      # Microservices
+│   ├── patient-service/           # Patient management domain
+│   │   └── src/
+│   │       ├── patient/           # Domain-specific folder
+│   │       │   ├── patient.entity.ts
+│   │       │   ├── patient.repository.ts
+│   │       │   ├── patient.service.ts
+│   │       │   ├── patient.controller.ts
+│   │       │   ├── patient.module.ts
+│   │       │   └── create-patient.dto.ts
+│   │       └── app.module.ts
+│   ├── diagnostic-service/        # Diagnostic management domain
+│   │   └── src/
+│   │       ├── diagnostic/        # Domain-specific folder
+│   │       │   ├── diagnostic.entity.ts
+│   │       │   ├── diagnostic.repository.ts
+│   │       │   ├── diagnostic.service.ts
+│   │       │   ├── diagnostic.controller.ts
+│   │       │   ├── diagnostic.module.ts
+│   │       │   └── create-diagnostic.dto.ts
+│   │       └── app.module.ts
+│   ├── eform-service/             # Electronic forms domain
+│   │   └── src/
+│   │       ├── eform/             # Domain-specific folder
+│   │       │   ├── eform.entity.ts
+│   │       │   ├── eform.repository.ts
+│   │       │   ├── eform.service.ts
+│   │       │   ├── eform.controller.ts
+│   │       │   ├── eform.module.ts
+│   │       │   └── create-eform.dto.ts
+│   │       └── app.module.ts
+│   ├── auth-service/              # Authentication & authorization
+│   ├── encounter-service/         # Patient encounters
+│   ├── financial-service/         # Financial management
+│   ├── filestore-service/         # File storage
+│   ├── messaging-service/         # Messaging system
+│   ├── order-service/             # Order management
+│   ├── inventory-service/         # Inventory management
+│   ├── printing-service/          # Printing services
+│   └── api-gateway/               # API Gateway
+└── docker-compose.yml
 ```
 
-## 🚀 Quick Start
+## 🔧 Repository Pattern Implementation
+
+### Base Repository
+
+The `BaseRepository` class provides robust, reusable query functions with:
+
+- **CRUD Operations**: Create, Read, Update, Delete with proper error handling
+- **Pagination Support**: Built-in pagination with sorting and filtering
+- **Audit Trail**: Automatic audit logging for all operations
+- **Soft Delete**: Soft delete functionality with `active` flag
+- **Query Builder**: Flexible query building with search and filter options
+
+```typescript
+// Example usage in a domain repository
+@Injectable()
+export class PatientRepository extends BaseRepository<Patient> {
+  constructor() {
+    const patientModel = getModelForClass(Patient);
+    super(patientModel);
+  }
+
+  // Domain-specific methods
+  async findByIdentifier(system: string, value: string): Promise<Patient | null> {
+    return await this.findOne({
+      'identifier.system': system,
+      'identifier.value': value,
+      active: true,
+    });
+  }
+}
+```
+
+### Key Features
+
+- **Production-Ready**: Comprehensive error handling and logging
+- **Type-Safe**: Full TypeScript support with proper typing
+- **Flexible**: Supports complex queries with pagination and filtering
+- **Auditable**: Built-in audit trail for compliance requirements
+- **Optimistic Locking**: Version control for concurrent updates
+
+## 🏛️ NestJS Modular Architecture
+
+Each service follows NestJS best practices with proper module organization:
+
+### Domain Module Structure
+
+```typescript
+@Module({
+  controllers: [PatientController],
+  providers: [PatientService, PatientRepository],
+  exports: [PatientService, PatientRepository],
+})
+export class PatientModule {}
+```
+
+### Service Layer
+
+Services contain business logic and orchestrate operations:
+
+```typescript
+@Injectable()
+export class PatientService {
+  constructor(private readonly patientRepository: PatientRepository) {}
+
+  async createPatient(createPatientDto: CreatePatientDto, context: any): Promise<Patient> {
+    // Business logic here
+    const savedPatient = await this.patientRepository.createPatient(createPatientDto, context);
+
+    // Event emission for other services
+    if (this.broker) {
+      this.broker.emit('patient.created', {
+        patientId: savedPatient._id,
+        identifier: savedPatient.identifier[0]?.value,
+      });
+    }
+
+    return savedPatient;
+  }
+}
+```
+
+### Controller Layer
+
+Controllers handle HTTP requests with proper validation and documentation:
+
+```typescript
+@Controller('patients')
+@ApiTags('Patients')
+export class PatientController {
+  constructor(private readonly patientService: PatientService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createPatient(
+    @Body() createPatientDto: CreatePatientDto,
+    @Request() req: any
+  ): Promise<Patient> {
+    return await this.patientService.createPatient(createPatientDto, req);
+  }
+}
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Docker and Docker Compose
-- npm or yarn
+- Docker & Docker Compose
+- MongoDB 6+
 
-### 1. Clone and Setup
+### Installation
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd new-backend
+1. **Clone the repository**
 
-# Copy environment variables
-cp env.example .env
+   ```bash
+   git clone <repository-url>
+   cd his-vajira-backend-v2-rewrite
+   ```
 
-# Install dependencies
-npm install
-```
+2. **Install dependencies**
 
-### 2. Start Development Environment
+   ```bash
+   npm install
+   ```
 
-```bash
-# Start all services with Docker Compose
-npm run docker:up
+3. **Set up environment variables**
 
-# Install dependencies and build
-npm run setup
+   ```bash
+   cp env.example .env
+   # Edit .env with your configuration
+   ```
 
-# Start development servers
-npm run dev
-```
-
-### 3. Access Services
-
-- **API Gateway**: http://localhost:3001
-- **Patient Service**: http://localhost:3002
-- **Auth Service**: http://localhost:3003
-- **MongoDB**: localhost:27017
-- **Redis**: localhost:6379
-- **NATS**: localhost:4222
-
-## 🛠️ Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev              # Start all services in development mode
-npm run start:dev        # Start with Docker services
-
-# Building
-npm run build           # Build all packages and services
-npm run clean           # Clean build artifacts
-
-# Testing
-npm run test            # Run all tests
-npm run test:coverage   # Run tests with coverage
-
-# Linting
-npm run lint            # Lint all code
-npm run lint:fix        # Fix linting issues
-
-# Docker
-npm run docker:up       # Start Docker services
-npm run docker:down     # Stop Docker services
-npm run docker:logs     # View Docker logs
-```
-
-### Adding a New Service
-
-1. Create a new directory in `services/`
-2. Copy the structure from `patient-service/`
-3. Update `package.json` with service-specific dependencies
-4. Add service to `docker-compose.yml`
-5. Update API Gateway routes
-
-### Code Standards
-
-- **TypeScript**: Strict mode enabled
-- **ESLint**: Code quality enforcement
-- **Prettier**: Code formatting
-- **JSDoc**: Documentation for public methods
-- **FHIR Compliance**: All healthcare entities follow FHIR standards
-
-## 📊 Data Models
-
-### FHIR-Compliant Entities
-
-- **Patient**: Complete patient demographic information
-- **Encounter**: Healthcare encounters and visits
-- **ServiceRequest**: Orders and requests (lab, imaging, etc.)
-- **BaseEntity**: Common fields for all entities
-
-### Key Features
-
-- **Audit Trail**: Automatic tracking of changes
-- **Multi-tenancy**: Support for multiple organizations
-- **Soft Deletes**: Data preservation with active/inactive status
-- **Indexing**: Optimized database queries
-- **Validation**: Comprehensive input validation
-
-## 🔐 Authentication & Authorization
-
-- **JWT-based** authentication
-- **Role-based** access control
-- **Permission-based** authorization
-- **API Gateway** handles authentication centrally
-
-## 🚀 Performance Features
-
-- **Redis Caching**: Multi-layer caching strategy
-- **Database Indexing**: Optimized query performance
-- **Connection Pooling**: Efficient database connections
-- **Load Balancing**: Service discovery and load distribution
-
-## 📈 Monitoring & Observability
-
-- **Health Checks**: Service health monitoring
-- **Metrics**: Prometheus metrics collection
-- **Logging**: Structured logging with correlation IDs
-- **Error Handling**: Comprehensive error management
-
-## 🧪 Testing Strategy
-
-- **Unit Tests**: 90%+ coverage requirement
-- **Integration Tests**: API endpoint testing
-- **E2E Tests**: Critical workflow testing
-- **Performance Tests**: Load testing capabilities
-
-## 🐳 Deployment
+4. **Start the services**
+   ```bash
+   docker-compose up -d
+   ```
 
 ### Development
 
-```bash
-# Start all services
-docker-compose up -d
+1. **Start a specific service**
 
-# View logs
-docker-compose logs -f
+   ```bash
+   cd services/patient-service
+   npm run start:dev
+   ```
+
+2. **Run tests**
+
+   ```bash
+   npm run test
+   ```
+
+3. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+## 📊 API Documentation
+
+Each service provides comprehensive API documentation via Swagger/OpenAPI:
+
+- **Patient Service**: `http://localhost:3001/api-docs`
+- **Diagnostic Service**: `http://localhost:3002/api-docs`
+- **Eform Service**: `http://localhost:3003/api-docs`
+
+## 🔒 Security Features
+
+- **JWT Authentication**: Secure token-based authentication
+- **Role-Based Access Control**: Fine-grained permission system
+- **Audit Logging**: Complete audit trail for compliance
+- **Input Validation**: Comprehensive request validation
+- **Rate Limiting**: Protection against abuse
+
+## 📈 Monitoring & Observability
+
+- **Structured Logging**: JSON-formatted logs with correlation IDs
+- **Health Checks**: Built-in health check endpoints
+- **Metrics**: Prometheus metrics for monitoring
+- **Tracing**: Distributed tracing support
+
+## 🧪 Testing Strategy
+
+- **Unit Tests**: Service and repository layer testing
+- **Integration Tests**: API endpoint testing
+- **E2E Tests**: Full workflow testing
+- **Performance Tests**: Load testing for critical paths
+
+## 🔄 Event-Driven Architecture
+
+Services communicate via events for loose coupling:
+
+```typescript
+// Event emission
+this.broker.emit('patient.created', {
+  patientId: patient._id,
+  identifier: patient.identifier[0]?.value,
+});
+
+// Event handling
+this.broker.on('patient.created', data => {
+  // Handle patient creation event
+});
 ```
 
-### Production
+## 📝 Contributing
 
-```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml build
-
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Key configuration options in `.env`:
-
-```bash
-# Database
-MONGODB_URI=mongodb://admin:password123@localhost:27017/his
-
-# Redis
-REDIS_URI=redis://:redis123@localhost:6379
-
-# NATS
-NATS_URI=nats://localhost:4222
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-
-# Services
-API_GATEWAY_PORT=3001
-PATIENT_SERVICE_PORT=3002
-AUTH_SERVICE_PORT=3003
-```
-
-## 📚 API Documentation
-
-- **Swagger UI**: Available at `/api/v2/docs` when services are running
-- **OpenAPI Spec**: Auto-generated from code annotations
-- **Postman Collection**: Available in `/docs/postman/`
-
-## 🤝 Contributing
-
-1. Follow the established code standards
-2. Write comprehensive tests
-3. Update documentation
-4. Use conventional commit messages
-5. Create feature branches
+1. Follow the established domain-based structure
+2. Use the repository pattern for data access
+3. Implement proper error handling and logging
+4. Add comprehensive tests
+5. Update documentation
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
+## 🤝 Support
 
-For questions and support:
-
-- Create an issue in the repository
-- Contact the development team
-- Check the documentation
-
----
-
-**Built with ❤️ by Ever Medical Technologies**
+For support and questions, please contact the development team or create an issue in the repository.

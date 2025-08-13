@@ -1,7 +1,7 @@
 {
-  "name": "@his/patient-service",
+  "name": "@his/printing-service",
   "version": "2.0.0",
-  "description": "Patient management microservice for HIS Backend v2",
+  "description": "Report generation and printing microservice for HIS Backend v2",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -21,7 +21,6 @@
     "@nestjs/platform-express": "^10.2.0",
     "@nestjs/swagger": "^7.1.0",
     "@nestjs/typeorm": "^10.0.0",
-    "@nestjs/mongoose": "^10.0.0",
     "@typegoose/typegoose": "^10.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
@@ -32,12 +31,15 @@
     "redis": "^4.6.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "socket.io": "^4.7.0"
+    "socket.io": "^4.7.0",
+    "puppeteer": "^21.5.0",
+    "handlebars": "^4.7.8"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.10.0",
+    "@types/handlebars": "^4.1.0",
     "jest": "^29.7.0",
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.0",

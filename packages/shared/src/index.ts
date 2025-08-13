@@ -11,6 +11,9 @@ export * from './interfaces/cache.interface';
 export * from './interfaces/database.interface';
 export * from './interfaces/service.interface';
 
+// Repositories
+export * from './repositories/base.repository';
+
 // Utilities
 export * from './utils/cache.utils';
 export * from './utils/validation.utils';

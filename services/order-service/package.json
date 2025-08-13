@@ -1,7 +1,7 @@
 {
-  "name": "@his/patient-service",
+  "name": "@his/order-service",
   "version": "2.0.0",
-  "description": "Patient management microservice for HIS Backend v2",
+  "description": "Order management microservice for HIS Backend v2",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -21,7 +21,6 @@
     "@nestjs/platform-express": "^10.2.0",
     "@nestjs/swagger": "^7.1.0",
     "@nestjs/typeorm": "^10.0.0",
-    "@nestjs/mongoose": "^10.0.0",
     "@typegoose/typegoose": "^10.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",

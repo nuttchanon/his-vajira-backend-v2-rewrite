@@ -90,6 +90,256 @@ services:
       - ./services/patient-service:/app
       - /app/node_modules
 
+  # Auth Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.dev
+    container_name: his-auth-service
+    restart: unless-stopped
+    ports:
+      - '3003:3003'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - AUTH_SERVICE_PORT=3003
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+
+  # Order Service
+  order-service:
+    build:
+      context: ./services/order-service
+      dockerfile: Dockerfile.dev
+    container_name: his-order-service
+    restart: unless-stopped
+    ports:
+      - '3004:3004'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - ORDER_SERVICE_PORT=3004
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/order-service:/app
+      - /app/node_modules
+
+  # Inventory Service
+  inventory-service:
+    build:
+      context: ./services/inventory-service
+      dockerfile: Dockerfile.dev
+    container_name: his-inventory-service
+    restart: unless-stopped
+    ports:
+      - '3005:3005'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - INVENTORY_SERVICE_PORT=3005
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/inventory-service:/app
+      - /app/node_modules
+
+  # Encounter Service
+  encounter-service:
+    build:
+      context: ./services/encounter-service
+      dockerfile: Dockerfile.dev
+    container_name: his-encounter-service
+    restart: unless-stopped
+    ports:
+      - '3006:3006'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - ENCOUNTER_SERVICE_PORT=3006
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/encounter-service:/app
+      - /app/node_modules
+
+  # Diagnostic Service
+  diagnostic-service:
+    build:
+      context: ./services/diagnostic-service
+      dockerfile: Dockerfile.dev
+    container_name: his-diagnostic-service
+    restart: unless-stopped
+    ports:
+      - '3007:3007'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - DIAGNOSTIC_SERVICE_PORT=3007
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/diagnostic-service:/app
+      - /app/node_modules
+
+  # Financial Service
+  financial-service:
+    build:
+      context: ./services/financial-service
+      dockerfile: Dockerfile.dev
+    container_name: his-financial-service
+    restart: unless-stopped
+    ports:
+      - '3008:3008'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - FINANCIAL_SERVICE_PORT=3008
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/financial-service:/app
+      - /app/node_modules
+
+  # Eform Service
+  eform-service:
+    build:
+      context: ./services/eform-service
+      dockerfile: Dockerfile.dev
+    container_name: his-eform-service
+    restart: unless-stopped
+    ports:
+      - '3009:3009'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - EFORM_SERVICE_PORT=3009
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/eform-service:/app
+      - /app/node_modules
+
+  # Filestore Service
+  filestore-service:
+    build:
+      context: ./services/filestore-service
+      dockerfile: Dockerfile.dev
+    container_name: his-filestore-service
+    restart: unless-stopped
+    ports:
+      - '3010:3010'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - FILESTORE_SERVICE_PORT=3010
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/filestore-service:/app
+      - /app/node_modules
+
+  # Messaging Service
+  messaging-service:
+    build:
+      context: ./services/messaging-service
+      dockerfile: Dockerfile.dev
+    container_name: his-messaging-service
+    restart: unless-stopped
+    ports:
+      - '3011:3011'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - MESSAGING_SERVICE_PORT=3011
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/messaging-service:/app
+      - /app/node_modules
+
+  # Printing Service
+  printing-service:
+    build:
+      context: ./services/printing-service
+      dockerfile: Dockerfile.dev
+    container_name: his-printing-service
+    restart: unless-stopped
+    ports:
+      - '3012:3012'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - PRINTING_SERVICE_PORT=3012
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/printing-service:/app
+      - /app/node_modules
+
 volumes:
   mongodb_data:
     driver: local

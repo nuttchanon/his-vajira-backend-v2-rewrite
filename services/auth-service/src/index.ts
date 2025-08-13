@@ -3,16 +3,16 @@ import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
 import { AppModule } from './app.module';
-import { PatientService } from './patient/patient.service';
-import { PatientRepository } from './patient/patient.repository';
+import { AuthService } from './auth/auth.service';
+import { UserRepository } from './auth/user.repository';
 
-class PatientMoleculerService {
+class AuthMoleculerService {
   private broker: ServiceBroker;
-  private patientService: PatientService;
+  private authService: AuthService;
 
   constructor() {
     this.broker = new ServiceBroker({
-      nodeID: 'patient-service',
+      nodeID: 'auth-service',
       transporter: process.env.NATS_URI || 'nats://localhost:4222',
       logLevel: 'info',
       metrics: {
@@ -20,7 +20,7 @@ class PatientMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3030,
+            port: 3031,
             path: '/metrics',
           },
         },
@@ -30,7 +30,7 @@ class PatientMoleculerService {
 
   async start() {
     try {
-      console.log('Starting Patient Service...');
+      console.log('Starting Auth Service...');
 
       // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
@@ -50,71 +50,101 @@ class PatientMoleculerService {
       // Start NestJS application
       await this.startNestJS();
 
-      console.log('Patient Service started successfully');
+      console.log('Auth Service started successfully');
     } catch (error) {
-      console.error('Error starting Patient Service:', error);
+      console.error('Error starting Auth Service:', error);
       process.exit(1);
     }
   }
 
   private registerActions() {
-    // Create patient service instance with repository
-    const patientRepository = new PatientRepository();
-    const patientService = new PatientService(patientRepository);
-    patientService.broker = this.broker;
+    // Create auth service instance with repository
+    const userRepository = new UserRepository();
+    const authService = new AuthService(userRepository, null as any); // JWT service will be injected by NestJS
+    authService.broker = this.broker;
 
-    // Create patient action
+    // Create auth action
     this.broker.createService({
-      name: 'patient',
+      name: 'auth',
       actions: {
-        create: {
+        login: {
           handler: async (ctx: any) => {
-            const { createPatientDto, context } = ctx.params;
-            return await patientService.createPatient(createPatientDto, context);
+            const { loginDto } = ctx.params;
+            return await authService.login(loginDto);
           },
         },
-        getById: {
+        register: {
           handler: async (ctx: any) => {
-            const { id } = ctx.params;
-            return await patientService.getPatientById(id);
+            const { registerDto, context } = ctx.params;
+            return await authService.register(registerDto, context);
           },
         },
-        list: {
+        validateToken: {
+          handler: async (ctx: any) => {
+            const { token } = ctx.params;
+            return await authService.validateToken(token);
+          },
+        },
+        refreshToken: {
+          handler: async (ctx: any) => {
+            const { refreshTokenDto } = ctx.params;
+            return await authService.refreshToken(refreshTokenDto);
+          },
+        },
+        logout: {
+          handler: async (ctx: any) => {
+            const { userId, refreshToken } = ctx.params;
+            return await authService.logout(userId, refreshToken);
+          },
+        },
+        changePassword: {
+          handler: async (ctx: any) => {
+            const { userId, changePasswordDto } = ctx.params;
+            return await authService.changePassword(userId, changePasswordDto);
+          },
+        },
+        getUsers: {
           handler: async (ctx: any) => {
             const { query } = ctx.params;
-            return await patientService.getPatients(query);
+            return await authService.getUsers(query);
           },
         },
-        update: {
+        getUserById: {
           handler: async (ctx: any) => {
-            const { id, updateData, context } = ctx.params;
-            return await patientService.updatePatient(id, updateData, context);
+            const { id } = ctx.params;
+            return await authService.getUserById(id);
           },
         },
-        delete: {
+        updateUser: {
+          handler: async (ctx: any) => {
+            const { id, updateUserDto, context } = ctx.params;
+            return await authService.updateUser(id, updateUserDto, context);
+          },
+        },
+        deleteUser: {
           handler: async (ctx: any) => {
             const { id, context } = ctx.params;
-            return await patientService.deletePatient(id, context);
+            return await authService.deleteUser(id, context);
           },
         },
       },
       events: {
-        'patient.created': {
+        'user.registered': {
           handler: async (ctx: any) => {
-            console.log('Patient created event received:', ctx.params);
-            // Handle patient created event
+            console.log('User registered event received:', ctx.params);
+            // Handle user registered event
           },
         },
-        'patient.updated': {
+        'user.logged_in': {
           handler: async (ctx: any) => {
-            console.log('Patient updated event received:', ctx.params);
-            // Handle patient updated event
+            console.log('User logged in event received:', ctx.params);
+            // Handle user logged in event
           },
         },
-        'patient.deleted': {
+        'user.logged_out': {
           handler: async (ctx: any) => {
-            console.log('Patient deleted event received:', ctx.params);
-            // Handle patient deleted event
+            console.log('User logged out event received:', ctx.params);
+            // Handle user logged out event
           },
         },
       },
@@ -138,9 +168,9 @@ class PatientMoleculerService {
       app.setGlobalPrefix('api/v2');
 
       // Start HTTP server
-      const port = process.env.PATIENT_SERVICE_PORT || 3002;
+      const port = process.env.AUTH_SERVICE_PORT || 3003;
       await app.listen(port);
-      console.log(`Patient Service listening on port ${port}`);
+      console.log(`Auth Service listening on port ${port}`);
     } catch (error) {
       console.error('Error starting NestJS application:', error);
       throw error;
@@ -151,9 +181,9 @@ class PatientMoleculerService {
     try {
       await this.broker.stop();
       await disconnect();
-      console.log('Patient Service stopped');
+      console.log('Auth Service stopped');
     } catch (error) {
-      console.error('Error stopping Patient Service:', error);
+      console.error('Error stopping Auth Service:', error);
     }
   }
 }
@@ -172,8 +202,8 @@ process.on('SIGTERM', async () => {
 });
 
 // Start the service
-const service = new PatientMoleculerService();
+const service = new AuthMoleculerService();
 service.start().catch(error => {
-  console.error('Failed to start Patient Service:', error);
+  console.error('Failed to start Auth Service:', error);
   process.exit(1);
 });
