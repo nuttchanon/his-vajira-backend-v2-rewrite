@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { MessagingService } from './services/messaging.service';
-import { MessagingController } from './controllers/messaging.controller';
-import { Message } from './entities/message.entity';
+import { MessagingService } from './messaging/messaging.service';
+import { MessagingController } from './messaging/messaging.controller';
+import { Message } from './messaging/entity/message.entity';
 
 class MessagingMoleculerService {
   private broker: ServiceBroker;
@@ -130,7 +130,10 @@ class MessagingMoleculerService {
       res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept,Authorization'
+      );
       next();
     });
 

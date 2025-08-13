@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { EformService } from './services/eform.service';
-import { EformController } from './controllers/eform.controller';
-import { Eform } from './entities/eform.entity';
+import { EformService } from './eform/eform.service';
+import { EformController } from './eform/eform.controller';
+import { Eform } from './eform/entity/eform.entity';
 
 class EformMoleculerService {
   private broker: ServiceBroker;

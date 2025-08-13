@@ -24,9 +24,9 @@ import {
   ResetPasswordDto,
   LoginResponseDto,
   TokenValidationDto,
-} from './auth.dto';
+} from './dto/auth.dto';
 import { PaginationQueryDto } from '@his/shared';
-import { User, UserRole } from './user.entity';
+import { User, UserRole } from './entity/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -109,7 +109,10 @@ export class AuthController {
    */
   @Put('change-password')
   @HttpCode(HttpStatus.OK)
-  async changePassword(@Request() req: any, @Body() changePasswordDto: ChangePasswordDto): Promise<boolean> {
+  async changePassword(
+    @Request() req: any,
+    @Body() changePasswordDto: ChangePasswordDto
+  ): Promise<boolean> {
     const userId = req.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
@@ -223,7 +226,10 @@ export class AuthController {
    */
   @Get('users/search/name/:name')
   @HttpCode(HttpStatus.OK)
-  async searchUsersByName(@Param('name') name: string, @Query() query: PaginationQueryDto): Promise<any> {
+  async searchUsersByName(
+    @Param('name') name: string,
+    @Query() query: PaginationQueryDto
+  ): Promise<any> {
     // This would be implemented in the service if needed
     // For now, we'll use the general getUsers method with name filter
     const searchQuery = { ...query, search: name };
@@ -238,7 +244,10 @@ export class AuthController {
    */
   @Get('users/role/:role')
   @HttpCode(HttpStatus.OK)
-  async getUsersByRole(@Param('role') role: UserRole, @Query() query: PaginationQueryDto): Promise<any> {
+  async getUsersByRole(
+    @Param('role') role: UserRole,
+    @Query() query: PaginationQueryDto
+  ): Promise<any> {
     // This would be implemented in the service if needed
     // For now, we'll use the general getUsers method with role filter
     const filterQuery = { ...query, filter: JSON.stringify({ role }) };

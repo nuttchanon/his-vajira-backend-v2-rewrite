@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@his/shared';
-import { Diagnostic, DiagnosticModel } from './diagnostic.entity';
+import { Diagnostic, DiagnosticModel } from './entity/diagnostic.entity';
 import { CreateDiagnosticDto } from './create-diagnostic.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 

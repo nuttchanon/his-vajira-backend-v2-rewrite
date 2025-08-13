@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --concurrency=15",
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
@@ -17,8 +17,8 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
-    "setup": "npm run docker:up && npm install && npm run build",
-    "start:dev": "concurrently \"npm run docker:up\" \"npm run dev\""
+    "setup": "yarn run docker:up && yarn install && yarn run build",
+    "start:dev": "concurrently \"yarn run docker:up\" \"yarn run dev\""
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -53,6 +53,8 @@
   "author": "Ever Medical Technologies",
   "license": "MIT",
   "dependencies": {
-    "nats": "^2.29.3"
+    "bcrypt": "^5.1.0",
+    "nats": "^2.29.3",
+    "passport-jwt": "^4.0.1"
   }
 }

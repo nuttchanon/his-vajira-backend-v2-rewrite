@@ -1,7 +1,7 @@
 import { Injectable, Logger, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User, UserRole, UserStatus } from './user.entity';
+import { User, UserRole, UserStatus } from './entity/user.entity';
 import { UserRepository } from './user.repository';
 import {
   LoginDto,
@@ -13,7 +13,7 @@ import {
   ResetPasswordDto,
   LoginResponseDto,
   TokenValidationDto,
-} from './auth.dto';
+} from './dto/auth.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 
 @Injectable()

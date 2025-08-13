@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Encounter, EncounterStatus, EncounterClass, EncounterPriority } from './encounter.entity';
+import { Encounter, EncounterStatus, EncounterClass, EncounterPriority } from './entity/encounter.entity';
 import { EncounterRepository } from './encounter.repository';
 import { CreateEncounterDto, UpdateEncounterDto, EncounterQueryDto } from './encounter.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';

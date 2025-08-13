@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { EncounterService } from './services/encounter.service';
-import { EncounterController } from './controllers/encounter.controller';
-import { Encounter } from './entities/encounter.entity';
+import { EncounterService } from './encounter/encounter.service';
+import { EncounterController } from './encounter/encounter.controller';
+import { Encounter } from './encounter/entity/encounter.entity';
 
 class EncounterMoleculerService {
   private broker: ServiceBroker;

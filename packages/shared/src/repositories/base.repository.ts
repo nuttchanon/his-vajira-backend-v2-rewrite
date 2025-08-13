@@ -48,7 +48,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
       }
 
       const document = await query.exec();
-      return document;
+      return document as T | null;
     } catch (error) {
       this.logger.error(`Error finding document by ID ${id}:`, error);
       throw error;

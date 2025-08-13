@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { DiagnosticService } from './services/diagnostic.service';
-import { DiagnosticController } from './controllers/diagnostic.controller';
-import { Diagnostic } from './entities/diagnostic.entity';
+import { DiagnosticService } from './diagnostic/diagnostic.service';
+import { DiagnosticController } from './diagnostic/diagnostic.controller';
+import { Diagnostic } from './diagnostic/entity/diagnostic.entity';
 
 class DiagnosticMoleculerService {
   private broker: ServiceBroker;

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { getModelForClass } from '@typegoose/typegoose';
 import { BaseRepository } from '@his/shared';
-import { User, UserRole, UserStatus } from './user.entity';
-import { RegisterDto, UpdateUserDto } from './auth.dto';
+import { User, UserRole, UserStatus } from './entity/user.entity';
+import { RegisterDto, UpdateUserDto } from './dto/auth.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 
 @Injectable()

@@ -1,5 +1,5 @@
 import { IsEmail, IsString, IsOptional, IsEnum, MinLength, MaxLength, IsArray } from 'class-validator';
-import { UserRole, UserStatus } from './user.entity';
+import { UserRole, UserStatus } from '../entity/user.entity';
 
 export class LoginDto {
   @IsString()

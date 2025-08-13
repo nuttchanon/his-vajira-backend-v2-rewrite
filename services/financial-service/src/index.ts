@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { FinancialService } from './services/financial.service';
-import { FinancialController } from './controllers/financial.controller';
-import { Financial } from './entities/financial.entity';
+import { FinancialService } from './financial/financial.service';
+import { FinancialController } from './financial/financial.controller';
+import { Financial } from './financial/entity/financial.entity';
 
 class FinancialMoleculerService {
   private broker: ServiceBroker;
@@ -130,7 +130,10 @@ class FinancialMoleculerService {
       res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept,Authorization'
+      );
       next();
     });
 

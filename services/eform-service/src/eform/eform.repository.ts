@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@his/shared';
-import { Eform, EformModel } from './eform.entity';
+import { Eform, EformModel } from './entity/eform.entity';
 import { CreateEformDto } from './create-eform.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 

@@ -2,9 +2,9 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { InventoryService } from './services/inventory.service';
-import { InventoryController } from './controllers/inventory.controller';
-import { Inventory } from './entities/inventory.entity';
+import { InventoryService } from './inventory/inventory.service';
+import { InventoryController } from './inventory/inventory.controller';
+import { Inventory } from './inventory/entity/inventory.entity';
 
 class InventoryMoleculerService {
   private broker: ServiceBroker;
@@ -130,7 +130,10 @@ class InventoryMoleculerService {
       res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept,Authorization'
+      );
       next();
     });
 
