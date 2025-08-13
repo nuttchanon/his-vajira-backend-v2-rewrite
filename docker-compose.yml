@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: his-mongodb
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: his
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - his-network
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    container_name: his-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - his-network
+
+  # NATS Message Broker
+  nats:
+    image: nats:2.10-alpine
+    container_name: his-nats
+    restart: unless-stopped
+    ports:
+      - '4222:4222'
+      - '8222:8222'
+    command: nats-server --jetstream --http_port 8222
+    networks:
+      - his-network
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile.dev
+    container_name: his-api-gateway
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/api-gateway:/app
+      - /app/node_modules
+
+  # Patient Service
+  patient-service:
+    build:
+      context: ./services/patient-service
+      dockerfile: Dockerfile.dev
+    container_name: his-patient-service
+    restart: unless-stopped
+    ports:
+      - '3002:3002'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - SERVICE_PORT=3002
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/patient-service:/app
+      - /app/node_modules
+
+  # Authentication Service
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile.dev
+    container_name: his-auth-service
+    restart: unless-stopped
+    ports:
+      - '3003:3003'
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
+      - REDIS_URI=redis://:redis123@redis:6379
+      - NATS_URI=nats://nats:4222
+      - SERVICE_PORT=3003
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      - mongodb
+      - redis
+      - nats
+    networks:
+      - his-network
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  his-network:
+    driver: bridge
