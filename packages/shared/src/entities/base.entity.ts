@@ -76,6 +76,7 @@ export abstract class BaseEntity {
   @prop({
     description: 'Additional metadata and extensions',
     default: {},
+    type: () => Object,
   })
   extensions?: Record<string, any>;
 }

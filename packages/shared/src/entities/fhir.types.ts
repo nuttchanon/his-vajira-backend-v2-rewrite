@@ -1,5 +1,29 @@
 import { prop } from '@typegoose/typegoose';
 
+// FHIR Period
+export class Period {
+  @prop()
+  start?: Date;
+
+  @prop()
+  end?: Date;
+}
+
+// FHIR Reference
+export class Reference {
+  @prop()
+  reference?: string;
+
+  @prop()
+  type?: string;
+
+  @prop()
+  identifier?: any;
+
+  @prop()
+  display?: string;
+}
+
 // FHIR Identifier
 export class Identifier {
   @prop({ required: true })
@@ -12,13 +36,40 @@ export class Identifier {
   use?: string;
 
   @prop()
-  type?: CodeableConcept;
+  type?: any;
 
   @prop()
   period?: Period;
 
   @prop()
   assigner?: Reference;
+}
+
+// FHIR Coding
+export class Coding {
+  @prop()
+  system?: string;
+
+  @prop()
+  version?: string;
+
+  @prop()
+  code?: string;
+
+  @prop()
+  display?: string;
+
+  @prop()
+  userSelected?: boolean;
+}
+
+// FHIR CodeableConcept
+export class CodeableConcept {
+  @prop({ type: () => [Coding] })
+  coding?: Coding[];
+
+  @prop()
+  text?: string;
 }
 
 // FHIR HumanName
@@ -94,57 +145,6 @@ export class Address {
 
   @prop()
   period?: Period;
-}
-
-// FHIR CodeableConcept
-export class CodeableConcept {
-  @prop({ type: () => [Coding] })
-  coding?: Coding[];
-
-  @prop()
-  text?: string;
-}
-
-// FHIR Coding
-export class Coding {
-  @prop()
-  system?: string;
-
-  @prop()
-  version?: string;
-
-  @prop()
-  code?: string;
-
-  @prop()
-  display?: string;
-
-  @prop()
-  userSelected?: boolean;
-}
-
-// FHIR Reference
-export class Reference {
-  @prop()
-  reference?: string;
-
-  @prop()
-  type?: string;
-
-  @prop()
-  identifier?: Identifier;
-
-  @prop()
-  display?: string;
-}
-
-// FHIR Period
-export class Period {
-  @prop()
-  start?: Date;
-
-  @prop()
-  end?: Date;
 }
 
 // FHIR Quantity

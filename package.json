@@ -51,5 +51,8 @@
     "fhir"
   ],
   "author": "Ever Medical Technologies",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "nats": "^2.29.3"
+  }
 }

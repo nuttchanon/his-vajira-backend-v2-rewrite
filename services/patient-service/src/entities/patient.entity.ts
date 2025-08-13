@@ -15,6 +15,7 @@ import { AdministrativeGender } from '@his/shared';
   schemaOptions: {
     collection: 'patient',
     collation: { locale: 'en' },
+    allowMixed: true,
     indexes: [
       { 'identifier.system': 1, 'identifier.value': 1 },
       { 'name.family': 1, 'name.given': 1 },
@@ -39,7 +40,7 @@ export class Patient extends BaseEntity {
   @prop({ required: true, type: () => [HumanName] })
   name!: HumanName[];
 
-  @prop({ required: true, enum: AdministrativeGender })
+  @prop({ required: true, enum: Object.values(AdministrativeGender), type: String })
   gender!: AdministrativeGender;
 
   @prop({ required: true, index: true })

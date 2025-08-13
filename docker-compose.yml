@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # MongoDB Database
   mongodb:
@@ -90,32 +88,6 @@ services:
       - his-network
     volumes:
       - ./services/patient-service:/app
-      - /app/node_modules
-
-  # Authentication Service
-  auth-service:
-    build:
-      context: ./services/auth-service
-      dockerfile: Dockerfile.dev
-    container_name: his-auth-service
-    restart: unless-stopped
-    ports:
-      - '3003:3003'
-    environment:
-      - NODE_ENV=development
-      - MONGODB_URI=mongodb://admin:password123@mongodb:27017/his?authSource=admin
-      - REDIS_URI=redis://:redis123@redis:6379
-      - NATS_URI=nats://nats:4222
-      - SERVICE_PORT=3003
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
-    depends_on:
-      - mongodb
-      - redis
-      - nats
-    networks:
-      - his-network
-    volumes:
-      - ./services/auth-service:/app
       - /app/node_modules
 
 volumes:

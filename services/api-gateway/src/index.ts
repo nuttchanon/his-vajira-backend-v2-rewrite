@@ -23,9 +23,6 @@ class ApiGatewayMoleculerService {
         },
       },
     });
-
-    this.apiGatewayService = new ApiGatewayService();
-    this.apiGatewayService.broker = this.broker;
   }
 
   async start() {
@@ -52,7 +49,6 @@ class ApiGatewayMoleculerService {
   private registerApiGateway() {
     this.broker.createService({
       name: 'api-gateway',
-      mixins: [this.apiGatewayService],
       settings: {
         port: process.env.API_GATEWAY_PORT || 3001,
         routes: [
@@ -63,25 +59,47 @@ class ApiGatewayMoleculerService {
           },
         ],
       },
+      actions: {
+        authenticate: {
+          handler: async (ctx: any, route: any, req: any, res: any) => {
+            // Authentication logic will be implemented here
+            return true;
+          },
+        },
+        authorize: {
+          handler: async (ctx: any, route: any, req: any, res: any) => {
+            // Authorization logic will be implemented here
+            return true;
+          },
+        },
+      },
     });
   }
 
   private async startNestJS() {
-    const app = await NestFactory.create(ApiGatewayService);
+    // Create a simple Express app instead of NestJS for now
+    const express = require('express');
+    const app = express();
 
     // Enable CORS
-    app.enableCors({
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-      credentials: true,
+    app.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      next();
     });
 
     // Global prefix
-    app.setGlobalPrefix('api/v2');
+    app.use('/api/v2', (req, res) => {
+      res.json({ message: 'API Gateway is running', timestamp: new Date().toISOString() });
+    });
 
     // Start HTTP server
     const port = process.env.API_GATEWAY_PORT || 3001;
-    await app.listen(port);
-    console.log(`API Gateway listening on port ${port}`);
+    app.listen(port, () => {
+      console.log(`API Gateway listening on port ${port}`);
+    });
   }
 
   async stop() {

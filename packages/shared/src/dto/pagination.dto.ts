@@ -29,7 +29,7 @@ export class PaginationQueryDto {
 }
 
 export class PaginationResponseDto<T> {
-  data: T[];
+  data: T[] = [];
   pagination: {
     page: number;
     pageSize: number;
@@ -37,14 +37,21 @@ export class PaginationResponseDto<T> {
     totalPages: number;
     hasNext: boolean;
     hasPrev: boolean;
+  } = {
+    page: 1,
+    pageSize: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
   };
 }
 
 export class PaginationMeta {
-  page: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
+  page: number = 1;
+  pageSize: number = 10;
+  total: number = 0;
+  totalPages: number = 0;
+  hasNext: boolean = false;
+  hasPrev: boolean = false;
 }

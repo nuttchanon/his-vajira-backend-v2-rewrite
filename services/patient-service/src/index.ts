@@ -26,9 +26,6 @@ class PatientMoleculerService {
         },
       },
     });
-
-    this.patientService = new PatientService();
-    this.patientService.broker = this.broker;
   }
 
   async start() {
@@ -61,6 +58,10 @@ class PatientMoleculerService {
   }
 
   private registerActions() {
+    // Create patient service instance
+    const patientService = new PatientService();
+    patientService.broker = this.broker;
+
     // Create patient action
     this.broker.createService({
       name: 'patient',
@@ -68,31 +69,31 @@ class PatientMoleculerService {
         create: {
           handler: async (ctx: any) => {
             const { createPatientDto, context } = ctx.params;
-            return await this.patientService.createPatient(createPatientDto, context);
+            return await patientService.createPatient(createPatientDto, context);
           },
         },
         getById: {
           handler: async (ctx: any) => {
             const { id } = ctx.params;
-            return await this.patientService.getPatientById(id);
+            return await patientService.getPatientById(id);
           },
         },
         list: {
           handler: async (ctx: any) => {
             const { query } = ctx.params;
-            return await this.patientService.getPatients(query);
+            return await patientService.getPatients(query);
           },
         },
         update: {
           handler: async (ctx: any) => {
             const { id, updateData, context } = ctx.params;
-            return await this.patientService.updatePatient(id, updateData, context);
+            return await patientService.updatePatient(id, updateData, context);
           },
         },
         delete: {
           handler: async (ctx: any) => {
             const { id, context } = ctx.params;
-            return await this.patientService.deletePatient(id, context);
+            return await patientService.deletePatient(id, context);
           },
         },
       },
@@ -120,21 +121,29 @@ class PatientMoleculerService {
   }
 
   private async startNestJS() {
-    const app = await NestFactory.create(PatientController);
+    // Create a simple Express app instead of NestJS for now
+    const express = require('express');
+    const app = express();
 
     // Enable CORS
-    app.enableCors({
-      origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-      credentials: true,
+    app.use((req, res, next) => {
+      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
+      res.header('Access-Control-Allow-Credentials', 'true');
+      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      next();
     });
 
     // Global prefix
-    app.setGlobalPrefix('api/v2');
+    app.use('/api/v2', (req, res) => {
+      res.json({ message: 'Patient Service is running', timestamp: new Date().toISOString() });
+    });
 
     // Start HTTP server
     const port = process.env.PATIENT_SERVICE_PORT || 3002;
-    await app.listen(port);
-    console.log(`NestJS application listening on port ${port}`);
+    app.listen(port, () => {
+      console.log(`Patient Service listening on port ${port}`);
+    });
   }
 
   async stop() {

@@ -1,14 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Service } from 'moleculer';
 import { getModelForClass } from '@typegoose/typegoose';
 import { Patient } from '../entities/patient.entity';
 import { CreatePatientDto } from '../dto/create-patient.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 
 @Injectable()
-export class PatientService extends Service {
+export class PatientService {
   private readonly logger = new Logger(PatientService.name);
   private readonly patientModel = getModelForClass(Patient);
+  public broker: any; // Will be set by the Moleculer service
 
   /**
    * Creates a new patient with the provided information
@@ -73,7 +73,7 @@ export class PatientService extends Service {
       });
 
       return savedPatient;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Error creating patient: ${error.message}`, error.stack);
       throw error;
     }
@@ -97,7 +97,7 @@ export class PatientService extends Service {
       }
 
       return patient;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Error fetching patient: ${error.message}`, error.stack);
       throw error;
     }

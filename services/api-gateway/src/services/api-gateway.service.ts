@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Service } from 'moleculer';
-import { ApiGateway } from 'moleculer-web';
 import jwt from 'jsonwebtoken';
 
 @Injectable()
-export class ApiGatewayService extends Service {
+export class ApiGatewayService {
   private readonly logger = new Logger(ApiGatewayService.name);
 
   /**
