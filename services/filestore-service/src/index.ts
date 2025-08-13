@@ -2,13 +2,12 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { FilestoreService } from './services/filestore.service';
-import { FilestoreController } from './controllers/filestore.controller';
-import { Filestore } from './entities/filestore.entity';
+import { AppModule } from './app.module';
+import { FilestoreService } from './filestore/filestore.service';
+import { FilestoreRepository } from './filestore/filestore.repository';
 
 class FilestoreMoleculerService {
   private broker: ServiceBroker;
-  private filestoreService: FilestoreService;
 
   constructor() {
     this.broker = new ServiceBroker({
@@ -19,10 +18,7 @@ class FilestoreMoleculerService {
         enabled: true,
         reporter: {
           type: 'Prometheus',
-          options: {
-            port: 3038,
-            path: '/metrics',
-          },
+          options: { port: 3038, path: '/metrics' },
         },
       },
     });
@@ -32,7 +28,6 @@ class FilestoreMoleculerService {
     try {
       console.log('Starting Filestore Service...');
 
-      // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
@@ -40,14 +35,11 @@ class FilestoreMoleculerService {
       });
       console.log('Connected to MongoDB');
 
-      // Start Moleculer broker
       await this.broker.start();
       console.log('Moleculer broker started');
 
-      // Register service actions
       this.registerActions();
 
-      // Start NestJS application
       await this.startNestJS();
 
       console.log('Filestore Service started successfully');
@@ -58,11 +50,10 @@ class FilestoreMoleculerService {
   }
 
   private registerActions() {
-    // Create filestore service instance
-    const filestoreService = new FilestoreService();
-    filestoreService.broker = this.broker;
+    const filestoreRepository = new FilestoreRepository();
+    const filestoreService = new FilestoreService(filestoreRepository);
+    (filestoreService as any).broker = this.broker;
 
-    // Create filestore action
     this.broker.createService({
       name: 'filestore',
       actions: {
@@ -75,7 +66,8 @@ class FilestoreMoleculerService {
         download: {
           handler: async (ctx: any) => {
             const { id } = ctx.params;
-            return await filestoreService.downloadFile(id);
+            // download flow is usually handled by gateway; placeholder
+            return await filestoreService.getFileById(id);
           },
         },
         getById: {
@@ -101,13 +93,11 @@ class FilestoreMoleculerService {
         'file.uploaded': {
           handler: async (ctx: any) => {
             console.log('File uploaded event received:', ctx.params);
-            // Handle file uploaded event
           },
         },
         'file.deleted': {
           handler: async (ctx: any) => {
             console.log('File deleted event received:', ctx.params);
-            // Handle file deleted event
           },
         },
       },
@@ -115,29 +105,22 @@ class FilestoreMoleculerService {
   }
 
   private async startNestJS() {
-    // Create a simple Express app instead of NestJS for now
-    const express = require('express');
-    const app = express();
-
-    // Enable CORS
-    app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
-      next();
-    });
-
-    // Global prefix
-    app.use('/api/v2', (req, res) => {
-      res.json({ message: 'Filestore Service is running', timestamp: new Date().toISOString() });
-    });
-
-    // Start HTTP server
-    const port = process.env.FILESTORE_SERVICE_PORT || 3010;
-    app.listen(port, () => {
+    try {
+      const app = await NestFactory.create(AppModule);
+      app.enableCors({
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+      });
+      app.setGlobalPrefix('api/v2');
+      const port = process.env.FILESTORE_SERVICE_PORT || 3010;
+      await app.listen(port as number);
       console.log(`Filestore Service listening on port ${port}`);
-    });
+    } catch (error) {
+      console.error('Error starting NestJS application:', error);
+      throw error;
+    }
   }
 
   async stop() {
@@ -151,7 +134,6 @@ class FilestoreMoleculerService {
   }
 }
 
-// Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Received SIGINT, shutting down gracefully...');
   await service.stop();
@@ -164,7 +146,6 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Start the service
 const service = new FilestoreMoleculerService();
 service.start().catch(error => {
   console.error('Failed to start Filestore Service:', error);

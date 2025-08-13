@@ -2,13 +2,12 @@ import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
-import { PrintingService } from './services/printing.service';
-import { PrintingController } from './controllers/printing.controller';
-import { Report } from './entities/report.entity';
+import { AppModule } from './app.module';
+import { PrintingService } from './printing/printing.service';
+import { PrintingRepository } from './printing/printing.repository';
 
 class PrintingMoleculerService {
   private broker: ServiceBroker;
-  private printingService: PrintingService;
 
   constructor() {
     this.broker = new ServiceBroker({
@@ -19,10 +18,7 @@ class PrintingMoleculerService {
         enabled: true,
         reporter: {
           type: 'Prometheus',
-          options: {
-            port: 3040,
-            path: '/metrics',
-          },
+          options: { port: 3040, path: '/metrics' },
         },
       },
     });
@@ -32,7 +28,6 @@ class PrintingMoleculerService {
     try {
       console.log('Starting Printing Service...');
 
-      // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
@@ -40,14 +35,11 @@ class PrintingMoleculerService {
       });
       console.log('Connected to MongoDB');
 
-      // Start Moleculer broker
       await this.broker.start();
       console.log('Moleculer broker started');
 
-      // Register service actions
       this.registerActions();
 
-      // Start NestJS application
       await this.startNestJS();
 
       console.log('Printing Service started successfully');
@@ -58,17 +50,16 @@ class PrintingMoleculerService {
   }
 
   private registerActions() {
-    // Create printing service instance
-    const printingService = new PrintingService();
-    printingService.broker = this.broker;
+    const printingRepository = new PrintingRepository();
+    const printingService = new PrintingService(printingRepository);
+    (printingService as any).broker = this.broker;
 
-    // Create printing action
     this.broker.createService({
       name: 'printing',
       actions: {
         generate: {
           handler: async (ctx: any) => {
-            const { generateReportDto, context } = ctx.params;
+            const { generateReportDto, context } = ctx.params || {};
             return await printingService.generateReport(generateReportDto, context);
           },
         },
@@ -101,19 +92,16 @@ class PrintingMoleculerService {
         'report.generated': {
           handler: async (ctx: any) => {
             console.log('Report generated event received:', ctx.params);
-            // Handle report generated event
           },
         },
         'report.updated': {
           handler: async (ctx: any) => {
             console.log('Report updated event received:', ctx.params);
-            // Handle report updated event
           },
         },
         'report.deleted': {
           handler: async (ctx: any) => {
             console.log('Report deleted event received:', ctx.params);
-            // Handle report deleted event
           },
         },
       },
@@ -121,29 +109,22 @@ class PrintingMoleculerService {
   }
 
   private async startNestJS() {
-    // Create a simple Express app instead of NestJS for now
-    const express = require('express');
-    const app = express();
-
-    // Enable CORS
-    app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
-      res.header('Access-Control-Allow-Credentials', 'true');
-      res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
-      next();
-    });
-
-    // Global prefix
-    app.use('/api/v2', (req, res) => {
-      res.json({ message: 'Printing Service is running', timestamp: new Date().toISOString() });
-    });
-
-    // Start HTTP server
-    const port = process.env.PRINTING_SERVICE_PORT || 3012;
-    app.listen(port, () => {
+    try {
+      const app = await NestFactory.create(AppModule);
+      app.enableCors({
+        origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+      });
+      app.setGlobalPrefix('api/v2');
+      const port = process.env.PRINTING_SERVICE_PORT || 3012;
+      await app.listen(port as number);
       console.log(`Printing Service listening on port ${port}`);
-    });
+    } catch (error) {
+      console.error('Error starting NestJS application:', error);
+      throw error;
+    }
   }
 
   async stop() {
@@ -157,7 +138,6 @@ class PrintingMoleculerService {
   }
 }
 
-// Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log('Received SIGINT, shutting down gracefully...');
   await service.stop();
@@ -170,7 +150,6 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Start the service
 const service = new PrintingMoleculerService();
 service.start().catch(error => {
   console.error('Failed to start Printing Service:', error);
