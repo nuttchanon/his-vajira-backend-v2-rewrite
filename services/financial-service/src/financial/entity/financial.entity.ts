@@ -11,50 +11,65 @@ import { BaseEntity } from '@his/shared';
   },
 })
 export class Financial extends BaseEntity {
-  @prop({ required: true, trim: true })
+  @prop({ required: true, index: true })
+  public code!: string;
+
+  @prop({ required: true })
+  public name!: string;
+
+  @prop()
+  public description?: string;
+
+  @prop({ required: true, enum: ['INCOME', 'EXPENSE', 'ASSET', 'LIABILITY', 'EQUITY'] })
   public type!: string;
 
-  @prop({ required: true, min: 0 })
+  @prop({ required: true, enum: ['ACTIVE', 'INACTIVE', 'ARCHIVED'], default: 'ACTIVE' })
+  public status!: string;
+
+  @prop({ required: true })
   public amount!: number;
 
-  @prop({ required: true, trim: true })
+  @prop({ required: true })
   public currency!: string;
 
-  @prop({ required: true, trim: true })
-  public description!: string;
+  @prop()
+  public category?: string;
 
-  @prop({ required: true, trim: true })
-  public category!: string;
+  @prop()
+  public subcategory?: string;
 
-  @prop({ trim: true })
-  public referenceNumber?: string;
+  @prop()
+  public department?: string;
 
-  @prop({ trim: true })
-  public patientId?: string;
+  @prop()
+  public fiscalYear?: string;
 
-  @prop({ trim: true })
-  public encounterId?: string;
-
-  @prop({ required: true, enum: ['income', 'expense', 'transfer'] })
-  public transactionType!: string;
-
-  @prop({ required: true, enum: ['pending', 'completed', 'cancelled', 'refunded'] })
-  public status!: string;
+  @prop()
+  public fiscalPeriod?: string;
 
   @prop()
   public transactionDate?: Date;
 
-  @prop({ trim: true })
-  public paymentMethod?: string;
+  @prop()
+  public dueDate?: Date;
 
-  @prop({ trim: true })
-  public notes?: string;
+  @prop()
+  public paymentDate?: Date;
 
   @prop({ type: () => [String] })
   public tags?: string[];
 
   @prop({ type: () => Object })
   public metadata?: Record<string, any>;
+
+  @prop()
+  public referenceNumber?: string;
+
+  @prop()
+  public externalReference?: string;
+
+  @prop()
+  public notes?: string;
 }
 
 export const FinancialModel = getModelForClass(Financial);
