@@ -26,7 +26,6 @@ his-vajira-backend-v2-rewrite/
 │       │   ├── enums/            # Common enums
 │       │   ├── interfaces/       # Service interfaces
 │       │   ├── repositories/     # Base repository pattern
-│       │   │   └── base.repository.ts  # Production-ready base repository
 │       │   └── utils/            # Utility functions
 │       └── package.json
 ├── services/
@@ -44,87 +43,34 @@ his-vajira-backend-v2-rewrite/
 │   ├── patient-service/          # Patient management
 │   │   └── src/
 │   │       └── patient/          # Patient domain
-│   │           ├── patient.controller.ts
-│   │           ├── patient.service.ts
-│   │           ├── patient.repository.ts
-│   │           ├── patient.module.ts
-│   │           ├── entity/
-│   │           │   └── patient.entity.ts
-│   │           └── dto/
-│   │               └── create-patient.dto.ts
 │   ├── diagnostic-service/       # Diagnostic codes management
 │   │   └── src/
 │   │       └── diagnostic/       # Diagnostic domain
-│   │           ├── diagnostic.controller.ts
-│   │           ├── diagnostic.service.ts
-│   │           ├── diagnostic.repository.ts
-│   │           ├── diagnostic.module.ts
-│   │           ├── diagnostic.entity.ts
-│   │           └── create-diagnostic.dto.ts
 │   ├── eform-service/            # Electronic forms management
 │   │   └── src/
 │   │       └── eform/            # Eform domain
-│   │           ├── eform.controller.ts
-│   │           ├── eform.service.ts
-│   │           ├── eform.repository.ts
-│   │           ├── eform.module.ts
-│   │           ├── eform.entity.ts
-│   │           └── create-eform.dto.ts
 │   ├── encounter-service/        # Patient encounters
 │   │   └── src/
 │   │       └── encounter/        # Encounter domain
-│   │           ├── encounter.controller.ts
-│   │           ├── encounter.service.ts
-│   │           ├── encounter.repository.ts
-│   │           ├── encounter.module.ts
-│   │           ├── encounter.entity.ts
-│   │           └── encounter.dto.ts
 │   ├── financial-service/        # Financial management
 │   │   └── src/
 │   │       └── financial/        # Financial domain
-│   │           ├── financial.controller.ts
-│   │           ├── financial.service.ts
-│   │           ├── financial.repository.ts
-│   │           ├── financial.module.ts
-│   │           ├── entity/
-│   │           │   └── financial.entity.ts
-│   │           └── dto/
-│   │               └── create-financial.dto.ts
 │   ├── inventory-service/        # Inventory management
 │   │   └── src/
 │   │       └── inventory/        # Inventory domain
-│   │           ├── inventory.controller.ts
-│   │           ├── inventory.service.ts
-│   │           ├── inventory.repository.ts
-│   │           ├── inventory.module.ts
-│   │           ├── entity/
-│   │           │   └── inventory.entity.ts
-│   │           └── dto/
-│   │               └── create-inventory.dto.ts
 │   ├── order-service/            # Order management
 │   │   └── src/
 │   │       └── order/            # Order domain
-│   │           ├── order.controller.ts
-│   │           ├── order.service.ts
-│   │           ├── order.repository.ts
-│   │           ├── order.module.ts
-│   │           ├── entity/
-│   │           │   └── order.entity.ts
-│   │           └── dto/
-│   │               └── create-order.dto.ts
 │   ├── messaging-service/        # Messaging system
 │   │   └── src/
 │   │       └── messaging/        # Messaging domain
-│   │           ├── messaging.controller.ts
-│   │           ├── messaging.service.ts
-│   │           ├── messaging.repository.ts
-│   │           ├── messaging.module.ts
-│   │           ├── entity/
-│   │           │   └── messaging.entity.ts
-│   │           └── dto/
-│   │               └── create-messaging.dto.ts
 │   ├── printing-service/         # Report printing
+│   │   └── src/
+│   │       └── printing/         # Printing domain
 │   └── filestore-service/        # File storage
+│   │   └── src/
+│   │       └── filestore/        # File storage domain
+│   └── app/        # Messaging domain
 ├── docker/                       # Docker configurations
 ├── scripts/                      # Build and deployment scripts
 └── package.json
