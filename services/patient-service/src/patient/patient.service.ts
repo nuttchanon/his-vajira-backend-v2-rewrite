@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Patient } from './patient.entity';
-import { CreatePatientDto } from './create-patient.dto';
+import { Patient } from './entity/patient.entity';
+import { CreatePatientDto } from './dto/create-patient.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 import { PatientRepository } from './patient.repository';
 

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { getModelForClass } from '@typegoose/typegoose';
 import { BaseRepository } from '@his/shared';
-import { Patient } from './patient.entity';
-import { CreatePatientDto } from './create-patient.dto';
+import { Patient } from './entity/patient.entity';
+import { CreatePatientDto } from './dto/create-patient.dto';
 import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class PatientRepository extends BaseRepository<Patient> {
   async findByIdentifier(system: string, value: string): Promise<Patient | null> {
     try {
       this.logger.debug(`Finding patient by identifier: ${system}:${value}`);
-      
+
       return await this.findOne({
         'identifier.system': system,
         'identifier.value': value,
@@ -39,10 +39,13 @@ export class PatientRepository extends BaseRepository<Patient> {
    * @param query - Pagination parameters
    * @returns Promise<PaginationResponseDto<Patient>> - Paginated results
    */
-  async findByName(name: string, query: PaginationQueryDto): Promise<PaginationResponseDto<Patient>> {
+  async findByName(
+    name: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
     try {
       this.logger.debug(`Finding patients by name: ${name}`);
-      
+
       const filter = {
         $or: [
           { 'name.family': { $regex: name, $options: 'i' } },
@@ -65,7 +68,9 @@ export class PatientRepository extends BaseRepository<Patient> {
    */
   async createPatient(createPatientDto: CreatePatientDto, context: any): Promise<Patient> {
     try {
-      this.logger.debug(`Creating new patient with identifier: ${createPatientDto.identifier[0]?.value}`);
+      this.logger.debug(
+        `Creating new patient with identifier: ${createPatientDto.identifier[0]?.value}`
+      );
 
       // Check for duplicate identifiers
       const existingPatient = await this.findByIdentifier(

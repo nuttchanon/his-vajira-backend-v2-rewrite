@@ -13,7 +13,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { PatientService } from './patient.service';
-import { CreatePatientDto } from './create-patient.dto';
+import { CreatePatientDto } from './dto/create-patient.dto';
 import { PaginationQueryDto } from '@his/shared';
 
 @Controller('patients')
@@ -28,15 +28,12 @@ export class PatientController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async createPatient(
-    @Body() createPatientDto: CreatePatientDto,
-    @Request() req: any
-  ) {
+  async createPatient(@Body() createPatientDto: CreatePatientDto, @Request() req: any) {
     const context = {
       user: req.user,
       tenantId: req.headers['x-tenant-id'],
     };
-    
+
     return await this.patientService.createPatient(createPatientDto, context);
   }
 
@@ -80,7 +77,7 @@ export class PatientController {
       user: req.user,
       tenantId: req.headers['x-tenant-id'],
     };
-    
+
     return await this.patientService.updatePatient(id, updateData, context);
   }
 
@@ -92,15 +89,12 @@ export class PatientController {
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async deletePatient(
-    @Param('id') id: string,
-    @Request() req: any
-  ) {
+  async deletePatient(@Param('id') id: string, @Request() req: any) {
     const context = {
       user: req.user,
       tenantId: req.headers['x-tenant-id'],
     };
-    
+
     return await this.patientService.deletePatient(id, context);
   }
 
@@ -112,10 +106,7 @@ export class PatientController {
    */
   @Get('search/name/:name')
   @HttpCode(HttpStatus.OK)
-  async searchPatientsByName(
-    @Param('name') name: string,
-    @Query() query: PaginationQueryDto
-  ) {
+  async searchPatientsByName(@Param('name') name: string, @Query() query: PaginationQueryDto) {
     // This would be implemented in the service if needed
     // For now, we'll use the general getPatients method with name filter
     const searchQuery = { ...query, search: name };
@@ -130,13 +121,12 @@ export class PatientController {
    */
   @Get('identifier/:system/:value')
   @HttpCode(HttpStatus.OK)
-  async getPatientByIdentifier(
-    @Param('system') system: string,
-    @Param('value') value: string
-  ) {
+  async getPatientByIdentifier(@Param('system') system: string, @Param('value') value: string) {
     // This would be implemented in the service if needed
     // For now, we'll use a filter approach
-    const query = { filter: JSON.stringify({ 'identifier.system': system, 'identifier.value': value }) };
+    const query = {
+      filter: JSON.stringify({ 'identifier.system': system, 'identifier.value': value }),
+    };
     const result = await this.patientService.getPatients(query);
     return result.data.length > 0 ? result.data[0] : null;
   }
