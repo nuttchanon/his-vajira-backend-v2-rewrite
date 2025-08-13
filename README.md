@@ -16,7 +16,7 @@ This project implements a **microservice architecture** with the following key c
 ## 📁 Project Structure
 
 ```
-new-backend/
+his-vajira-backend-v2-rewrite/
 ├── packages/
 │   └── shared/                 # Shared utilities and types
 │       ├── src/
