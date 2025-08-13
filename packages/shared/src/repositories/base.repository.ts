@@ -1,5 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Model, Document, FilterQuery, UpdateQuery, QueryOptions } from 'mongoose';
+import { Model, FilterQuery, UpdateQuery } from 'mongoose';
+import { Logger } from '@nestjs/common';
 import { BaseEntity } from '../entities/base.entity';
 import { PaginationQueryDto, PaginationResponseDto } from '../dto/pagination.dto';
 
@@ -10,7 +10,16 @@ export interface QueryBuilderOptions {
   populate?: string | string[];
 }
 
-@Injectable()
+export interface QueryOptions {
+  populate?: string | string[];
+  select?: string;
+  lean?: boolean;
+}
+
+/**
+ * Base repository class providing common database operations
+ * with pagination, filtering, and error handling
+ */
 export abstract class BaseRepository<T extends BaseEntity> {
   protected readonly logger = new Logger(this.constructor.name);
 
@@ -18,284 +27,297 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
   /**
    * Find a document by its ID
-   * @param id - The document ID
+   * @param id - Document ID
    * @param options - Query options
-   * @returns Promise<T | null> - The found document or null
+   * @returns Document or null if not found
    */
   async findById(id: string, options?: QueryOptions): Promise<T | null> {
     try {
-      this.logger.debug(`Finding document by ID: ${id}`);
-
-      const query = this.model.findById(id, null, options);
+      let query = this.model.findById(id);
 
       if (options?.populate) {
-        query.populate(options.populate);
+        query = query.populate(options.populate as any);
+      }
+
+      if (options?.select) {
+        query = query.select(options.select);
+      }
+
+      if (options?.lean) {
+        query = query.lean();
       }
 
       const document = await query.exec();
-
-      if (!document) {
-        this.logger.warn(`Document not found with ID: ${id}`);
-        return null;
-      }
-
       return document;
     } catch (error) {
-      this.logger.error(`Error finding document by ID ${id}: ${error.message}`, error.stack);
+      this.logger.error(`Error finding document by ID ${id}:`, error);
       throw error;
     }
   }
 
   /**
-   * Find a document by its ID or throw NotFoundException
-   * @param id - The document ID
+   * Find a document by ID or throw an error if not found
+   * @param id - Document ID
    * @param options - Query options
-   * @returns Promise<T> - The found document
-   * @throws NotFoundException - When document is not found
+   * @returns Document
+   * @throws Error if document not found
    */
   async findByIdOrThrow(id: string, options?: QueryOptions): Promise<T> {
     const document = await this.findById(id, options);
     if (!document) {
-      throw new NotFoundException(`Document with ID ${id} not found`);
+      throw new Error(`Document with ID ${id} not found`);
     }
     return document;
   }
 
   /**
    * Find all documents with pagination and filtering
-   * @param query - Pagination and filter parameters
-   * @param options - Additional query options
-   * @returns Promise<PaginationResponseDto<T>> - Paginated results
+   * @param query - Pagination query parameters
+   * @param options - Query builder options
+   * @returns Paginated response
    */
   async findAll(
     query: PaginationQueryDto,
     options?: QueryBuilderOptions
   ): Promise<PaginationResponseDto<T>> {
     try {
-      this.logger.debug(`Finding all documents with query: ${JSON.stringify(query)}`);
+      const filter = this.buildFilterQuery(query, options);
+      const sort = this.buildSortQuery(query, options);
 
-      const { page = 1, pageSize = 10 } = query;
+      const page = query.page || 1;
+      const pageSize = query.pageSize || 10;
       const skip = (page - 1) * pageSize;
+      const limit = pageSize;
 
-      // Build filter query
-      const filterQuery = this.buildFilterQuery(query, options);
+      let dbQuery = this.model.find(filter);
 
-      // Build sort query
-      const sortQuery = this.buildSortQuery(query, options);
+      if (options?.populate) {
+        dbQuery = dbQuery.populate(options.populate as any);
+      }
 
-      // Execute query with pagination
-      const [documents, total] = await Promise.all([
-        this.model
-          .find(filterQuery)
-          .sort(sortQuery)
-          .skip(skip)
-          .limit(pageSize)
-          .populate(options?.populate || [])
-          .exec(),
-        this.model.countDocuments(filterQuery),
+      const [data, total] = await Promise.all([
+        dbQuery.sort(sort).skip(skip).limit(limit).exec(),
+        this.model.countDocuments(filter),
       ]);
 
       const totalPages = Math.ceil(total / pageSize);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
 
       return {
-        data: documents,
+        data,
         pagination: {
           page,
           pageSize,
           total,
           totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1,
+          hasNext,
+          hasPrev,
         },
       };
     } catch (error) {
-      this.logger.error(`Error finding all documents: ${error.message}`, error.stack);
+      this.logger.error('Error finding all documents:', error);
       throw error;
     }
   }
 
   /**
-   * Find one document by filter criteria
-   * @param filter - Filter criteria
+   * Find one document by filter
+   * @param filter - MongoDB filter query
    * @param options - Query options
-   * @returns Promise<T | null> - The found document or null
+   * @returns Document or null
    */
   async findOne(filter: FilterQuery<T>, options?: QueryOptions): Promise<T | null> {
     try {
-      this.logger.debug(`Finding one document with filter: ${JSON.stringify(filter)}`);
-
-      const query = this.model.findOne(filter, null, options);
+      let query = this.model.findOne(filter);
 
       if (options?.populate) {
-        query.populate(options.populate);
+        query = query.populate(options.populate as any);
       }
 
-      return await query.exec();
+      if (options?.select) {
+        query = query.select(options.select);
+      }
+
+      if (options?.lean) {
+        query = query.lean();
+      }
+
+      const document = await query.exec();
+      return document;
     } catch (error) {
-      this.logger.error(`Error finding one document: ${error.message}`, error.stack);
+      this.logger.error('Error finding one document:', error);
       throw error;
     }
   }
 
   /**
    * Create a new document
-   * @param data - The document data
-   * @returns Promise<T> - The created document
+   * @param data - Document data
+   * @returns Created document
    */
   async create(data: Partial<T>): Promise<T> {
     try {
-      this.logger.debug(`Creating new document with data: ${JSON.stringify(data)}`);
-
       const document = new this.model(data);
       const savedDocument = await document.save();
-
-      this.logger.debug(`Document created successfully with ID: ${savedDocument._id}`);
-
+      this.logger.log(`Created document with ID: ${savedDocument._id}`);
       return savedDocument;
     } catch (error) {
-      this.logger.error(`Error creating document: ${error.message}`, error.stack);
+      this.logger.error('Error creating document:', error);
       throw error;
     }
   }
 
   /**
    * Update an existing document
-   * @param id - The document ID
-   * @param data - The update data
-   * @param options - Update options
-   * @returns Promise<T | null> - The updated document or null if not found
+   * @param id - Document ID
+   * @param data - Update data
+   * @param options - Query options
+   * @returns Updated document or null
    */
-  async update(id: string, data: UpdateQuery<T>, options?: QueryOptions): Promise<T | null> {
+  async update(
+    id: string,
+    data: UpdateQuery<T>,
+    options?: QueryOptions
+  ): Promise<T | null> {
     try {
-      this.logger.debug(`Updating document with ID: ${id}`);
+      const updateData = {
+        ...data,
+        updatedAt: new Date(),
+      };
 
-      const updatedDocument = await this.model
-        .findByIdAndUpdate(id, data, {
-          new: true,
-          runValidators: true,
-          ...options,
-        })
-        .populate(options?.populate || [])
-        .exec();
+      let query = this.model.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true }
+      );
 
-      if (!updatedDocument) {
-        this.logger.warn(`Document not found for update with ID: ${id}`);
-        return null;
+      if (options?.populate) {
+        query = query.populate(options.populate as any);
       }
 
-      this.logger.debug(`Document updated successfully with ID: ${id}`);
+      if (options?.select) {
+        query = query.select(options.select);
+      }
+
+      const updatedDocument = await query.exec();
+      
+      if (updatedDocument) {
+        this.logger.log(`Updated document with ID: ${id}`);
+      } else {
+        this.logger.warn(`Document with ID ${id} not found for update`);
+      }
+
       return updatedDocument;
     } catch (error) {
-      this.logger.error(`Error updating document: ${error.message}`, error.stack);
+      this.logger.error(`Error updating document with ID ${id}:`, error);
       throw error;
     }
   }
 
   /**
-   * Update an existing document or throw NotFoundException
-   * @param id - The document ID
-   * @param data - The update data
-   * @param options - Update options
-   * @returns Promise<T> - The updated document
-   * @throws NotFoundException - When document is not found
+   * Update an existing document or throw an error if not found
+   * @param id - Document ID
+   * @param data - Update data
+   * @param options - Query options
+   * @returns Updated document
+   * @throws Error if document not found
    */
-  async updateOrThrow(id: string, data: UpdateQuery<T>, options?: QueryOptions): Promise<T> {
+  async updateOrThrow(
+    id: string,
+    data: UpdateQuery<T>,
+    options?: QueryOptions
+  ): Promise<T> {
     const updatedDocument = await this.update(id, data, options);
     if (!updatedDocument) {
-      throw new NotFoundException(`Document with ID ${id} not found`);
+      throw new Error(`Document with ID ${id} not found for update`);
     }
     return updatedDocument;
   }
 
   /**
    * Soft delete a document (set active: false)
-   * @param id - The document ID
-   * @param context - The request context for audit trail
-   * @returns Promise<boolean> - True if deleted successfully
+   * @param id - Document ID
+   * @param context - Request context for audit trail
+   * @returns Success status
    */
   async delete(id: string, context?: any): Promise<boolean> {
     try {
-      this.logger.debug(`Soft deleting document with ID: ${id}`);
-
-      const updateData: UpdateQuery<T> = {
+      const updateData: any = {
         active: false,
         updatedAt: new Date(),
       };
 
-      // Add audit trail if context is provided
       if (context?.user?.id) {
         updateData.updatedBy = context.user.id;
-        updateData.updatedByName = context.user.name || 'Unknown';
+        updateData.updatedByName = context.user.username || context.user.fullName;
       }
 
-      const deletedDocument = await this.model
-        .findByIdAndUpdate(id, updateData, { new: true })
-        .exec();
+      const result = await this.model.findByIdAndUpdate(id, updateData, {
+        new: true,
+      });
 
-      if (!deletedDocument) {
-        this.logger.warn(`Document not found for deletion with ID: ${id}`);
+      if (result) {
+        this.logger.log(`Soft deleted document with ID: ${id}`);
+        return true;
+      } else {
+        this.logger.warn(`Document with ID ${id} not found for deletion`);
         return false;
       }
-
-      this.logger.debug(`Document soft deleted successfully with ID: ${id}`);
-      return true;
     } catch (error) {
-      this.logger.error(`Error deleting document: ${error.message}`, error.stack);
+      this.logger.error(`Error deleting document with ID ${id}:`, error);
       throw error;
     }
   }
 
   /**
    * Hard delete a document (permanently remove)
-   * @param id - The document ID
-   * @returns Promise<boolean> - True if deleted successfully
+   * @param id - Document ID
+   * @returns Success status
    */
   async hardDelete(id: string): Promise<boolean> {
     try {
-      this.logger.debug(`Hard deleting document with ID: ${id}`);
-
-      const deletedDocument = await this.model.findByIdAndDelete(id).exec();
-
-      if (!deletedDocument) {
-        this.logger.warn(`Document not found for hard deletion with ID: ${id}`);
+      const result = await this.model.findByIdAndDelete(id);
+      
+      if (result) {
+        this.logger.log(`Hard deleted document with ID: ${id}`);
+        return true;
+      } else {
+        this.logger.warn(`Document with ID ${id} not found for hard deletion`);
         return false;
       }
-
-      this.logger.debug(`Document hard deleted successfully with ID: ${id}`);
-      return true;
     } catch (error) {
-      this.logger.error(`Error hard deleting document: ${error.message}`, error.stack);
+      this.logger.error(`Error hard deleting document with ID ${id}:`, error);
       throw error;
     }
   }
 
   /**
-   * Count documents by filter criteria
-   * @param filter - Filter criteria
-   * @returns Promise<number> - The count of documents
+   * Count documents matching a filter
+   * @param filter - MongoDB filter query
+   * @returns Count of documents
    */
   async count(filter: FilterQuery<T> = {}): Promise<number> {
     try {
-      this.logger.debug(`Counting documents with filter: ${JSON.stringify(filter)}`);
-      return await this.model.countDocuments(filter).exec();
+      const count = await this.model.countDocuments(filter);
+      return count;
     } catch (error) {
-      this.logger.error(`Error counting documents: ${error.message}`, error.stack);
+      this.logger.error('Error counting documents:', error);
       throw error;
     }
   }
 
   /**
-   * Check if a document exists by filter criteria
-   * @param filter - Filter criteria
-   * @returns Promise<boolean> - True if document exists
+   * Check if a document exists
+   * @param filter - MongoDB filter query
+   * @returns True if document exists
    */
   async exists(filter: FilterQuery<T>): Promise<boolean> {
     try {
-      this.logger.debug(`Checking if document exists with filter: ${JSON.stringify(filter)}`);
-      const count = await this.model.countDocuments(filter).exec();
+      const count = await this.model.countDocuments(filter);
       return count > 0;
     } catch (error) {
-      this.logger.error(`Error checking document existence: ${error.message}`, error.stack);
+      this.logger.error('Error checking document existence:', error);
       throw error;
     }
   }
@@ -304,72 +326,47 @@ export abstract class BaseRepository<T extends BaseEntity> {
    * Build filter query from pagination query and options
    * @param query - Pagination query
    * @param options - Query builder options
-   * @returns FilterQuery<T> - The built filter query
+   * @returns MongoDB filter query
    */
   protected buildFilterQuery(
     query: PaginationQueryDto,
     options?: QueryBuilderOptions
-  ): FilterQuery<T> {
-    const filterQuery: FilterQuery<T> = { active: true };
+  ): any {
+    const filter: any = { active: { $ne: false } };
 
-    // Add search functionality if text index exists
-    if (query.search) {
-      filterQuery.$text = { $search: query.search };
+    // Add search functionality
+    if (query.search && options?.search) {
+      const searchRegex = new RegExp(query.search, 'i');
+      filter[options.search] = searchRegex;
     }
 
-    // Add custom filter from options
+    // Add custom filters
     if (options?.filter) {
-      Object.assign(filterQuery, options.filter);
+      Object.assign(filter, options.filter);
     }
 
-    // Add filter from query string (JSON parsed)
-    if (query.filter) {
-      try {
-        const parsedFilter = JSON.parse(query.filter);
-        Object.assign(filterQuery, parsedFilter);
-      } catch (error) {
-        this.logger.warn(`Invalid filter JSON: ${query.filter}`);
-      }
-    }
-
-    return filterQuery;
+    return filter;
   }
 
   /**
    * Build sort query from pagination query and options
    * @param query - Pagination query
    * @param options - Query builder options
-   * @returns Record<string, 1 | -1> - The built sort query
+   * @returns MongoDB sort object
    */
   protected buildSortQuery(
     query: PaginationQueryDto,
     options?: QueryBuilderOptions
   ): Record<string, 1 | -1> {
-    // Default sort by creation date descending
-    let sortQuery: Record<string, 1 | -1> = { createdAt: -1 };
-
-    // Add custom sort from options
     if (options?.sort) {
-      sortQuery = { ...sortQuery, ...options.sort };
+      return options.sort;
     }
 
-    // Add sort from query string
     if (query.sort) {
-      try {
-        const sortFields = query.sort.split(',');
-        const parsedSort: Record<string, 1 | -1> = {};
-
-        for (const field of sortFields) {
-          const [key, order] = field.split(':');
-          parsedSort[key.trim()] = order === 'desc' ? -1 : 1;
-        }
-
-        sortQuery = { ...sortQuery, ...parsedSort };
-      } catch (error) {
-        this.logger.warn(`Invalid sort format: ${query.sort}`);
-      }
+      const [field, order] = query.sort.split(':');
+      return { [field]: order === 'desc' ? -1 : 1 };
     }
 
-    return sortQuery;
+    return { createdAt: -1 };
   }
 }

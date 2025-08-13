@@ -1,18 +1,17 @@
 # HIS Vajira Backend V2 - Rewrite
 
-A modern, production-ready healthcare information system backend built with NestJS, TypeScript, and MongoDB.
+A modern, microservices-based Hospital Information System (HIS) backend built with NestJS, TypeScript, and MongoDB.
 
 ## 🏗️ Architecture Overview
 
-This project follows a **Domain-Driven Design (DDD)** approach with a **microservices architecture**. Each service is organized by domain rather than technical layers, promoting better maintainability and scalability.
+This project follows a **domain-driven design (DDD)** approach with a **microservices architecture**. Each service is organized by domain rather than technical layers, promoting better maintainability and scalability.
 
 ### Key Architectural Patterns
 
-- **Domain-Based Structure**: Services are organized by business domains (patient, diagnostic, eform, etc.)
-- **Repository Pattern**: Robust data access layer with reusable base repository
-- **NestJS Modular Architecture**: Proper dependency injection and module organization
-- **Event-Driven Communication**: Inter-service communication via events
-- **Audit Trail**: Comprehensive audit logging for all data changes
+- **Domain-Based Structure**: Services are organized by business domains (patient, auth, diagnostic, etc.)
+- **Repository Pattern**: Standardized data access layer with robust query capabilities
+- **Module Pattern**: Proper NestJS dependency injection and modularity
+- **Microservices**: Independent, scalable services communicating via Moleculer
 
 ## 📁 Project Structure
 
@@ -21,101 +20,145 @@ his-vajira-backend-v2-rewrite/
 ├── packages/
 │   └── shared/                    # Shared utilities and base classes
 │       ├── src/
-│       │   ├── repositories/
-│       │   │   └── base.repository.ts    # Base repository with CRUD operations
-│       │   ├── entities/
-│       │   │   └── base.entity.ts        # Base entity with audit fields
-│       │   ├── dto/
-│       │   │   └── pagination.dto.ts     # Pagination DTOs
-│       │   └── index.ts
-├── services/                      # Microservices
-│   ├── patient-service/           # Patient management domain
+│       │   ├── constants/         # Error codes, status codes
+│       │   ├── dto/              # Base DTOs, pagination
+│       │   ├── entities/         # Base entities, FHIR types
+│       │   ├── enums/            # Common enums
+│       │   ├── interfaces/       # Service interfaces
+│       │   ├── repositories/     # Base repository pattern
+│       │   │   └── base.repository.ts  # Production-ready base repository
+│       │   └── utils/            # Utility functions
+│       └── package.json
+├── services/
+│   ├── api-gateway/              # API Gateway service
+│   ├── auth-service/             # Authentication & Authorization
 │   │   └── src/
-│   │       ├── patient/           # Domain-specific folder
-│   │       │   ├── patient.entity.ts
-│   │       │   ├── patient.repository.ts
-│   │       │   ├── patient.service.ts
-│   │       │   ├── patient.controller.ts
-│   │       │   ├── patient.module.ts
-│   │       │   └── create-patient.dto.ts
-│   │       └── app.module.ts
-│   ├── diagnostic-service/        # Diagnostic management domain
+│   │       └── auth/             # Auth domain
+│   │           ├── auth.controller.ts
+│   │           ├── auth.service.ts
+│   │           ├── auth.repository.ts
+│   │           ├── auth.module.ts
+│   │           ├── auth.dto.ts
+│   │           ├── user.entity.ts
+│   │           └── jwt.strategy.ts
+│   ├── patient-service/          # Patient management
 │   │   └── src/
-│   │       ├── diagnostic/        # Domain-specific folder
-│   │       │   ├── diagnostic.entity.ts
-│   │       │   ├── diagnostic.repository.ts
-│   │       │   ├── diagnostic.service.ts
-│   │       │   ├── diagnostic.controller.ts
-│   │       │   ├── diagnostic.module.ts
-│   │       │   └── create-diagnostic.dto.ts
-│   │       └── app.module.ts
-│   ├── eform-service/             # Electronic forms domain
+│   │       └── patient/          # Patient domain
+│   │           ├── patient.controller.ts
+│   │           ├── patient.service.ts
+│   │           ├── patient.repository.ts
+│   │           ├── patient.module.ts
+│   │           ├── entity/
+│   │           │   └── patient.entity.ts
+│   │           └── dto/
+│   │               └── create-patient.dto.ts
+│   ├── diagnostic-service/       # Diagnostic codes management
 │   │   └── src/
-│   │       ├── eform/             # Domain-specific folder
-│   │       │   ├── eform.entity.ts
-│   │       │   ├── eform.repository.ts
-│   │       │   ├── eform.service.ts
-│   │       │   ├── eform.controller.ts
-│   │       │   ├── eform.module.ts
-│   │       │   └── create-eform.dto.ts
-│   │       └── app.module.ts
-│   ├── auth-service/              # Authentication & authorization
-│   ├── encounter-service/         # Patient encounters
-│   ├── financial-service/         # Financial management
-│   ├── filestore-service/         # File storage
-│   ├── messaging-service/         # Messaging system
-│   ├── order-service/             # Order management
-│   ├── inventory-service/         # Inventory management
-│   ├── printing-service/          # Printing services
-│   └── api-gateway/               # API Gateway
-└── docker-compose.yml
+│   │       └── diagnostic/       # Diagnostic domain
+│   │           ├── diagnostic.controller.ts
+│   │           ├── diagnostic.service.ts
+│   │           ├── diagnostic.repository.ts
+│   │           ├── diagnostic.module.ts
+│   │           ├── diagnostic.entity.ts
+│   │           └── create-diagnostic.dto.ts
+│   ├── eform-service/            # Electronic forms management
+│   │   └── src/
+│   │       └── eform/            # Eform domain
+│   │           ├── eform.controller.ts
+│   │           ├── eform.service.ts
+│   │           ├── eform.repository.ts
+│   │           ├── eform.module.ts
+│   │           ├── eform.entity.ts
+│   │           └── create-eform.dto.ts
+│   ├── encounter-service/        # Patient encounters
+│   │   └── src/
+│   │       └── encounter/        # Encounter domain
+│   │           ├── encounter.controller.ts
+│   │           ├── encounter.service.ts
+│   │           ├── encounter.repository.ts
+│   │           ├── encounter.module.ts
+│   │           ├── encounter.entity.ts
+│   │           └── encounter.dto.ts
+│   ├── financial-service/        # Financial management
+│   │   └── src/
+│   │       └── financial/        # Financial domain
+│   │           ├── financial.controller.ts
+│   │           ├── financial.service.ts
+│   │           ├── financial.repository.ts
+│   │           ├── financial.module.ts
+│   │           ├── entity/
+│   │           │   └── financial.entity.ts
+│   │           └── dto/
+│   │               └── create-financial.dto.ts
+│   ├── inventory-service/        # Inventory management
+│   │   └── src/
+│   │       └── inventory/        # Inventory domain
+│   │           ├── inventory.controller.ts
+│   │           ├── inventory.service.ts
+│   │           ├── inventory.repository.ts
+│   │           ├── inventory.module.ts
+│   │           ├── entity/
+│   │           │   └── inventory.entity.ts
+│   │           └── dto/
+│   │               └── create-inventory.dto.ts
+│   ├── order-service/            # Order management
+│   │   └── src/
+│   │       └── order/            # Order domain
+│   │           ├── order.controller.ts
+│   │           ├── order.service.ts
+│   │           ├── order.repository.ts
+│   │           ├── order.module.ts
+│   │           ├── entity/
+│   │           │   └── order.entity.ts
+│   │           └── dto/
+│   │               └── create-order.dto.ts
+│   ├── messaging-service/        # Messaging system
+│   │   └── src/
+│   │       └── messaging/        # Messaging domain
+│   │           ├── messaging.controller.ts
+│   │           ├── messaging.service.ts
+│   │           ├── messaging.repository.ts
+│   │           ├── messaging.module.ts
+│   │           ├── entity/
+│   │           │   └── messaging.entity.ts
+│   │           └── dto/
+│   │               └── create-messaging.dto.ts
+│   ├── printing-service/         # Report printing
+│   └── filestore-service/        # File storage
+├── docker/                       # Docker configurations
+├── scripts/                      # Build and deployment scripts
+└── package.json
 ```
 
-## 🔧 Repository Pattern Implementation
+## 🔧 Core Components
 
-### Base Repository
+### 1. Base Repository Pattern
 
-The `BaseRepository` class provides robust, reusable query functions with:
+The `BaseRepository` class in `packages/shared/src/repositories/base.repository.ts` provides:
 
-- **CRUD Operations**: Create, Read, Update, Delete with proper error handling
-- **Pagination Support**: Built-in pagination with sorting and filtering
-- **Audit Trail**: Automatic audit logging for all operations
+- **CRUD Operations**: `findById`, `findAll`, `create`, `update`, `delete`
+- **Pagination**: Built-in pagination with sorting and filtering
+- **Error Handling**: Comprehensive error handling and logging
+- **Audit Trail**: Automatic audit trail for all operations
 - **Soft Delete**: Soft delete functionality with `active` flag
-- **Query Builder**: Flexible query building with search and filter options
 
 ```typescript
 // Example usage in a domain repository
-@Injectable()
 export class PatientRepository extends BaseRepository<Patient> {
   constructor() {
-    const patientModel = getModelForClass(Patient);
-    super(patientModel);
+    super(getModelForClass(Patient));
   }
 
   // Domain-specific methods
-  async findByIdentifier(system: string, value: string): Promise<Patient | null> {
-    return await this.findOne({
-      'identifier.system': system,
-      'identifier.value': value,
-      active: true,
-    });
+  async findByMRN(mrn: string): Promise<Patient | null> {
+    return this.findOne({ mrn });
   }
 }
 ```
 
-### Key Features
+### 2. Module Pattern
 
-- **Production-Ready**: Comprehensive error handling and logging
-- **Type-Safe**: Full TypeScript support with proper typing
-- **Flexible**: Supports complex queries with pagination and filtering
-- **Auditable**: Built-in audit trail for compliance requirements
-- **Optimistic Locking**: Version control for concurrent updates
-
-## 🏛️ NestJS Modular Architecture
-
-Each service follows NestJS best practices with proper module organization:
-
-### Domain Module Structure
+Each domain follows the NestJS module pattern:
 
 ```typescript
 @Module({
@@ -126,60 +169,24 @@ Each service follows NestJS best practices with proper module organization:
 export class PatientModule {}
 ```
 
-### Service Layer
+### 3. Domain-Based Structure
 
-Services contain business logic and orchestrate operations:
+Each service is organized by domain:
 
-```typescript
-@Injectable()
-export class PatientService {
-  constructor(private readonly patientRepository: PatientRepository) {}
-
-  async createPatient(createPatientDto: CreatePatientDto, context: any): Promise<Patient> {
-    // Business logic here
-    const savedPatient = await this.patientRepository.createPatient(createPatientDto, context);
-
-    // Event emission for other services
-    if (this.broker) {
-      this.broker.emit('patient.created', {
-        patientId: savedPatient._id,
-        identifier: savedPatient.identifier[0]?.value,
-      });
-    }
-
-    return savedPatient;
-  }
-}
-```
-
-### Controller Layer
-
-Controllers handle HTTP requests with proper validation and documentation:
-
-```typescript
-@Controller('patients')
-@ApiTags('Patients')
-export class PatientController {
-  constructor(private readonly patientService: PatientService) {}
-
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async createPatient(
-    @Body() createPatientDto: CreatePatientDto,
-    @Request() req: any
-  ): Promise<Patient> {
-    return await this.patientService.createPatient(createPatientDto, req);
-  }
-}
-```
+- **Controllers**: Handle HTTP requests
+- **Services**: Business logic layer
+- **Repositories**: Data access layer
+- **Entities**: Domain models
+- **DTOs**: Data transfer objects
+- **Modules**: Dependency injection configuration
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- Docker & Docker Compose
-- MongoDB 6+
+- MongoDB 5+
+- Docker (optional)
 
 ### Installation
 
@@ -203,90 +210,182 @@ export class PatientController {
    # Edit .env with your configuration
    ```
 
-4. **Start the services**
-   ```bash
-   docker-compose up -d
-   ```
-
-### Development
-
-1. **Start a specific service**
+4. **Start MongoDB**
 
    ```bash
-   cd services/patient-service
-   npm run start:dev
+   # Using Docker
+   docker run -d -p 27017:27017 --name mongodb mongo:5
+
+   # Or install MongoDB locally
    ```
 
-2. **Run tests**
+5. **Run services**
 
    ```bash
-   npm run test
+   # Run all services
+   npm run dev
+
+   # Run specific service
+   npm run dev:patient
+   npm run dev:auth
    ```
 
-3. **Build for production**
-   ```bash
-   npm run build
+## 🏥 Services Overview
+
+### Authentication Service (`auth-service`)
+
+- User management and authentication
+- JWT token handling
+- Role-based access control
+- Password management
+
+### Patient Service (`patient-service`)
+
+- Patient registration and management
+- Patient search and filtering
+- Medical record management
+- Patient demographics
+
+### Diagnostic Service (`diagnostic-service`)
+
+- Diagnostic codes management
+- ICD-10/ICD-11 support
+- Diagnosis tracking
+- Medical coding
+
+### EForm Service (`eform-service`)
+
+- Electronic forms management
+- Form templates and workflows
+- Data collection and validation
+- Form versioning
+
+### Encounter Service (`encounter-service`)
+
+- Patient encounter management
+- Visit tracking and scheduling
+- Clinical documentation
+- Encounter workflows
+
+### Financial Service (`financial-service`)
+
+- Financial transaction management
+- Billing and invoicing
+- Payment processing
+- Financial reporting
+
+### Inventory Service (`inventory-service`)
+
+- Medical supplies management
+- Stock tracking and alerts
+- Supplier management
+- Inventory optimization
+
+### Order Service (`order-service`)
+
+- Medical order management
+- Order workflows and approvals
+- Order tracking and status
+- Clinical decision support
+
+### Messaging Service (`messaging-service`)
+
+- Internal messaging system
+- Email and SMS integration
+- Notification management
+- Communication workflows
+
+## 🔄 Recent Refactoring
+
+### Completed Refactoring Tasks
+
+1. **✅ Project Restructuring**
+   - Reorganized from layer-based to domain-based architecture
+   - Created standardized folder structure for all services
+   - Implemented proper NestJS modular structure
+
+2. **✅ Base Repository Implementation**
+   - Created robust `BaseRepository` class with production-ready features
+   - Implemented comprehensive CRUD operations
+   - Added pagination, filtering, and error handling
+   - Included audit trail and soft delete functionality
+
+3. **✅ Service Refactoring**
+   - **Financial Service**: Complete domain-based restructuring
+   - **Inventory Service**: Full refactoring with proper entities and DTOs
+   - **Order Service**: Comprehensive restructuring with order management
+   - **Messaging Service**: Complete messaging system implementation
+
+4. **✅ Module Pattern Implementation**
+   - Created proper NestJS modules for all services
+   - Implemented dependency injection correctly
+   - Added proper exports and imports
+
+### Key Improvements
+
+- **Domain-Driven Design**: Each service now follows proper DDD principles
+- **Separation of Concerns**: Clear separation between controllers, services, and repositories
+- **Type Safety**: Full TypeScript implementation with proper types
+- **Validation**: Comprehensive input validation using class-validator
+- **Documentation**: Complete API documentation with Swagger
+- **Error Handling**: Robust error handling and logging throughout
+- **Audit Trail**: Automatic audit trail for all database operations
+
+## 📊 Architecture Benefits
+
+### Before Refactoring
+
+- Layer-based structure (controllers/, services/, entities/)
+- Inconsistent patterns across services
+- Mixed concerns in single files
+- Limited reusability
+
+### After Refactoring
+
+- Domain-based structure (patient/, auth/, diagnostic/)
+- Consistent patterns across all services
+- Clear separation of concerns
+- High reusability with BaseRepository
+- Proper NestJS modular architecture
+
+## 🛠️ Development Guidelines
+
+### Adding New Services
+
+1. Create service directory structure:
+
+   ```
+   service-name/
+   └── src/
+       └── domain-name/
+           ├── domain-name.controller.ts
+           ├── domain-name.service.ts
+           ├── domain-name.repository.ts
+           ├── domain-name.module.ts
+           ├── entity/
+           │   └── domain-name.entity.ts
+           └── dto/
+               └── create-domain-name.dto.ts
    ```
 
-## 📊 API Documentation
+2. Extend BaseRepository for data access
+3. Implement proper validation with DTOs
+4. Add comprehensive error handling
+5. Include proper logging and audit trails
 
-Each service provides comprehensive API documentation via Swagger/OpenAPI:
+### Best Practices
 
-- **Patient Service**: `http://localhost:3001/api-docs`
-- **Diagnostic Service**: `http://localhost:3002/api-docs`
-- **Eform Service**: `http://localhost:3003/api-docs`
+- Always extend `BaseRepository` for new repositories
+- Use proper TypeScript types and interfaces
+- Implement comprehensive validation with class-validator
+- Add proper error handling and logging
+- Follow NestJS dependency injection patterns
+- Include API documentation with Swagger decorators
 
-## 🔒 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Role-Based Access Control**: Fine-grained permission system
-- **Audit Logging**: Complete audit trail for compliance
-- **Input Validation**: Comprehensive request validation
-- **Rate Limiting**: Protection against abuse
-
-## 📈 Monitoring & Observability
-
-- **Structured Logging**: JSON-formatted logs with correlation IDs
-- **Health Checks**: Built-in health check endpoints
-- **Metrics**: Prometheus metrics for monitoring
-- **Tracing**: Distributed tracing support
-
-## 🧪 Testing Strategy
-
-- **Unit Tests**: Service and repository layer testing
-- **Integration Tests**: API endpoint testing
-- **E2E Tests**: Full workflow testing
-- **Performance Tests**: Load testing for critical paths
-
-## 🔄 Event-Driven Architecture
-
-Services communicate via events for loose coupling:
-
-```typescript
-// Event emission
-this.broker.emit('patient.created', {
-  patientId: patient._id,
-  identifier: patient.identifier[0]?.value,
-});
-
-// Event handling
-this.broker.on('patient.created', data => {
-  // Handle patient creation event
-});
-```
-
-## 📝 Contributing
-
-1. Follow the established domain-based structure
-2. Use the repository pattern for data access
-3. Implement proper error handling and logging
-4. Add comprehensive tests
-5. Update documentation
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🤝 Support
+## 🤝 Contributing
 
-For support and questions, please contact the development team or create an issue in the repository.
+Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.

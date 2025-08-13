@@ -1,177 +1,321 @@
 import { Injectable } from '@nestjs/common';
 import { getModelForClass } from '@typegoose/typegoose';
-import { BaseRepository } from '@his/shared';
+import {
+  BaseRepository,
+  QueryBuilderOptions,
+  PaginationQueryDto,
+  PaginationResponseDto,
+} from '@his/shared';
 import { Patient } from './entity/patient.entity';
-import { CreatePatientDto } from './dto/create-patient.dto';
-import { PaginationQueryDto, PaginationResponseDto } from '@his/shared';
 
 @Injectable()
 export class PatientRepository extends BaseRepository<Patient> {
   constructor() {
-    const patientModel = getModelForClass(Patient);
-    super(patientModel);
+    super(getModelForClass(Patient));
   }
 
   /**
-   * Find a patient by identifier (HN, etc.)
-   * @param system - The identifier system (e.g., 'HN')
-   * @param value - The identifier value
-   * @returns Promise<Patient | null> - The found patient or null
+   * Find patient by medical record number
+   * @param mrn - Medical Record Number
+   * @returns Patient or null
    */
-  async findByIdentifier(system: string, value: string): Promise<Patient | null> {
-    try {
-      this.logger.debug(`Finding patient by identifier: ${system}:${value}`);
-
-      return await this.findOne({
-        'identifier.system': system,
-        'identifier.value': value,
-        active: true,
-      });
-    } catch (error) {
-      this.logger.error(`Error finding patient by identifier: ${error.message}`, error.stack);
-      throw error;
-    }
+  async findByMRN(mrn: string): Promise<Patient | null> {
+    return this.findOne({ mrn });
   }
 
   /**
-   * Find patients by name (partial match)
-   * @param name - The name to search for
-   * @param query - Pagination parameters
-   * @returns Promise<PaginationResponseDto<Patient>> - Paginated results
+   * Find patient by national ID
+   * @param nationalId - National ID
+   * @returns Patient or null
+   */
+  async findByNationalId(nationalId: string): Promise<Patient | null> {
+    return this.findOne({ nationalId });
+  }
+
+  /**
+   * Find patients by name (search in firstName, lastName, and fullName)
+   * @param name - Name to search for
+   * @param query - Pagination query
+   * @returns Paginated patients
    */
   async findByName(
     name: string,
     query: PaginationQueryDto
   ): Promise<PaginationResponseDto<Patient>> {
-    try {
-      this.logger.debug(`Finding patients by name: ${name}`);
-
-      const filter = {
+    const options: QueryBuilderOptions = {
+      filter: {
         $or: [
-          { 'name.family': { $regex: name, $options: 'i' } },
-          { 'name.given': { $regex: name, $options: 'i' } },
+          { firstName: { $regex: name, $options: 'i' } },
+          { lastName: { $regex: name, $options: 'i' } },
+          { fullName: { $regex: name, $options: 'i' } },
         ],
-      };
+      },
+    };
 
-      return await this.findAll(query, { filter });
-    } catch (error) {
-      this.logger.error(`Error finding patients by name: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.findAll(query, options);
   }
 
   /**
-   * Create a new patient with duplicate checking
-   * @param createPatientDto - The patient creation data
-   * @param context - The request context
-   * @returns Promise<Patient> - The created patient
+   * Find patients by status
+   * @param status - Patient status
+   * @param query - Pagination query
+   * @returns Paginated patients
    */
-  async createPatient(createPatientDto: CreatePatientDto, context: any): Promise<Patient> {
-    try {
-      this.logger.debug(
-        `Creating new patient with identifier: ${createPatientDto.identifier[0]?.value}`
-      );
+  async findByStatus(
+    status: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: { status },
+    };
 
-      // Check for duplicate identifiers
-      const existingPatient = await this.findByIdentifier(
-        createPatientDto.identifier[0]?.system,
-        createPatientDto.identifier[0]?.value
-      );
-
-      if (existingPatient) {
-        throw new Error(
-          `Patient with identifier ${createPatientDto.identifier[0]?.value} already exists`
-        );
-      }
-
-      // Prepare patient data with audit information
-      const patientData = {
-        ...createPatientDto,
-        createdBy: context?.user?.id || 'system',
-        createdByName: context?.user?.name || 'System',
-        tenantId: context?.tenantId,
-        sourceSystem: 'his-v2',
-      };
-
-      return await this.create(patientData);
-    } catch (error) {
-      this.logger.error(`Error creating patient: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.findAll(query, options);
   }
 
   /**
-   * Update a patient with audit trail
-   * @param id - The patient ID
-   * @param updateData - The update data
-   * @param context - The request context
-   * @returns Promise<Patient | null> - The updated patient or null
+   * Find patients by gender
+   * @param gender - Patient gender
+   * @param query - Pagination query
+   * @returns Paginated patients
    */
-  async updatePatient(
-    id: string,
-    updateData: Partial<Patient>,
-    context: any
-  ): Promise<Patient | null> {
-    try {
-      this.logger.debug(`Updating patient with ID: ${id}`);
+  async findByGender(
+    gender: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: { gender },
+    };
 
-      const updatePayload = {
-        ...updateData,
-        updatedBy: context?.user?.id || 'system',
-        updatedByName: context?.user?.name || 'System',
-        updatedAt: new Date(),
-      };
-
-      return await this.update(id, updatePayload);
-    } catch (error) {
-      this.logger.error(`Error updating patient: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.findAll(query, options);
   }
 
   /**
-   * Soft delete a patient with audit trail
-   * @param id - The patient ID
-   * @param context - The request context
-   * @returns Promise<boolean> - True if deleted successfully
+   * Find patients by date of birth range
+   * @param startDate - Start date
+   * @param endDate - End date
+   * @param query - Pagination query
+   * @returns Paginated patients
+   */
+  async findByDateOfBirthRange(
+    startDate: Date,
+    endDate: Date,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: {
+        dateOfBirth: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Find patients by age range
+   * @param minAge - Minimum age
+   * @param maxAge - Maximum age
+   * @param query - Pagination query
+   * @returns Paginated patients
+   */
+  async findByAgeRange(
+    minAge: number,
+    maxAge: number,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate());
+    const minDate = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate());
+
+    const options: QueryBuilderOptions = {
+      filter: {
+        dateOfBirth: {
+          $gte: minDate,
+          $lte: maxDate,
+        },
+      },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Find patients by phone number
+   * @param phoneNumber - Phone number
+   * @param query - Pagination query
+   * @returns Paginated patients
+   */
+  async findByPhoneNumber(
+    phoneNumber: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: {
+        $or: [
+          { phoneNumber: { $regex: phoneNumber, $options: 'i' } },
+          { 'contactInfo.phoneNumber': { $regex: phoneNumber, $options: 'i' } },
+        ],
+      },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Find patients by email
+   * @param email - Email address
+   * @param query - Pagination query
+   * @returns Paginated patients
+   */
+  async findByEmail(
+    email: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: {
+        $or: [
+          { email: { $regex: email, $options: 'i' } },
+          { 'contactInfo.email': { $regex: email, $options: 'i' } },
+        ],
+      },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Find patients by address
+   * @param address - Address to search for
+   * @param query - Pagination query
+   * @returns Paginated patients
+   */
+  async findByAddress(
+    address: string,
+    query: PaginationQueryDto
+  ): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: {
+        $or: [
+          { 'address.street': { $regex: address, $options: 'i' } },
+          { 'address.city': { $regex: address, $options: 'i' } },
+          { 'address.state': { $regex: address, $options: 'i' } },
+          { 'address.postalCode': { $regex: address, $options: 'i' } },
+        ],
+      },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Find active patients
+   * @param query - Pagination query
+   * @returns Paginated active patients
+   */
+  async findActivePatients(query: PaginationQueryDto): Promise<PaginationResponseDto<Patient>> {
+    const options: QueryBuilderOptions = {
+      filter: { status: 'active' },
+    };
+
+    return this.findAll(query, options);
+  }
+
+  /**
+   * Get patient statistics
+   * @returns Patient statistics
+   */
+  async getPatientStatistics(): Promise<any> {
+    const [
+      totalPatients,
+      activePatients,
+      inactivePatients,
+      malePatients,
+      femalePatients,
+      patientsByStatus,
+    ] = await Promise.all([
+      this.count(),
+      this.count({ status: 'active' }),
+      this.count({ status: 'inactive' }),
+      this.count({ gender: 'male' }),
+      this.count({ gender: 'female' }),
+      this.model.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+    ]);
+
+    return {
+      total: totalPatients,
+      active: activePatients,
+      inactive: inactivePatients,
+      male: malePatients,
+      female: femalePatients,
+      byStatus: patientsByStatus,
+    };
+  }
+
+  /**
+   * Create a new patient with validation
+   * @param patientData - Patient data
+   * @param context - Request context
+   * @returns Created patient
+   */
+  async createPatient(patientData: any, context: any): Promise<Patient> {
+    // Add audit trail
+    const dataWithAudit = {
+      ...patientData,
+      createdBy: context?.user?.id,
+      createdByName: context?.user?.username || context?.user?.fullName,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    return this.create(dataWithAudit);
+  }
+
+  /**
+   * Update patient with validation
+   * @param id - Patient ID
+   * @param updateData - Update data
+   * @param context - Request context
+   * @returns Updated patient
+   */
+  async updatePatient(id: string, updateData: any, context: any): Promise<Patient | null> {
+    // Add audit trail
+    const dataWithAudit = {
+      ...updateData,
+      updatedBy: context?.user?.id,
+      updatedByName: context?.user?.username || context?.user?.fullName,
+      updatedAt: new Date(),
+    };
+
+    return this.update(id, dataWithAudit);
+  }
+
+  /**
+   * Delete patient (soft delete)
+   * @param id - Patient ID
+   * @param context - Request context
+   * @returns Success status
    */
   async deletePatient(id: string, context: any): Promise<boolean> {
-    try {
-      this.logger.debug(`Deleting patient with ID: ${id}`);
-      return await this.delete(id, context);
-    } catch (error) {
-      this.logger.error(`Error deleting patient: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.delete(id, context);
   }
 
   /**
-   * Get patients with advanced filtering
-   * @param query - Pagination and filter parameters
-   * @returns Promise<PaginationResponseDto<Patient>> - Paginated results
+   * Get all patients with pagination
+   * @param query - Pagination query
+   * @returns Paginated patients
    */
   async getPatients(query: PaginationQueryDto): Promise<PaginationResponseDto<Patient>> {
-    try {
-      this.logger.debug(`Getting patients with query: ${JSON.stringify(query)}`);
-      return await this.findAll(query);
-    } catch (error) {
-      this.logger.error(`Error getting patients: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.findAll(query);
   }
 
   /**
-   * Get patient by ID with proper error handling
-   * @param id - The patient ID
-   * @returns Promise<Patient | null> - The patient or null
+   * Get patient by ID
+   * @param id - Patient ID
+   * @returns Patient or null
    */
   async getPatientById(id: string): Promise<Patient | null> {
-    try {
-      this.logger.debug(`Getting patient by ID: ${id}`);
-      return await this.findById(id);
-    } catch (error) {
-      this.logger.error(`Error getting patient by ID: ${error.message}`, error.stack);
-      throw error;
-    }
+    return this.findById(id);
   }
 }
