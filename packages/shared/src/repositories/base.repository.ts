@@ -1,4 +1,4 @@
-import { Model, FilterQuery, UpdateQuery } from 'mongoose';
+import { Model, FilterQuery, UpdateQuery, Document, HydratedDocument } from 'mongoose';
 import { Logger } from '@nestjs/common';
 import { BaseEntity } from '../entities/base.entity';
 import { PaginationQueryDto, PaginationResponseDto } from '../dto/pagination.dto';
@@ -33,10 +33,10 @@ export abstract class BaseRepository<T extends BaseEntity> {
    */
   async findById(id: string, options?: QueryOptions): Promise<T | null> {
     try {
-      let query = this.model.findById(id);
+      let query: any = this.model.findById(id);
 
       if (options?.populate) {
-        query = query.populate(options.populate as any);
+        query = query.populate(options.populate);
       }
 
       if (options?.select) {
@@ -89,10 +89,10 @@ export abstract class BaseRepository<T extends BaseEntity> {
       const skip = (page - 1) * pageSize;
       const limit = pageSize;
 
-      let dbQuery = this.model.find(filter);
+      let dbQuery: any = this.model.find(filter);
 
       if (options?.populate) {
-        dbQuery = dbQuery.populate(options.populate as any);
+        dbQuery = dbQuery.populate(options.populate);
       }
 
       const [data, total] = await Promise.all([
@@ -105,7 +105,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
       const hasPrev = page > 1;
 
       return {
-        data,
+        data: data as T[],
         pagination: {
           page,
           pageSize,
@@ -129,10 +129,10 @@ export abstract class BaseRepository<T extends BaseEntity> {
    */
   async findOne(filter: FilterQuery<T>, options?: QueryOptions): Promise<T | null> {
     try {
-      let query = this.model.findOne(filter);
+      let query: any = this.model.findOne(filter);
 
       if (options?.populate) {
-        query = query.populate(options.populate as any);
+        query = query.populate(options.populate);
       }
 
       if (options?.select) {
@@ -144,7 +144,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
       }
 
       const document = await query.exec();
-      return document;
+      return document as T | null;
     } catch (error) {
       this.logger.error('Error finding one document:', error);
       throw error;
@@ -161,7 +161,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
       const document = new this.model(data);
       const savedDocument = await document.save();
       this.logger.log(`Created document with ID: ${savedDocument._id}`);
-      return savedDocument;
+      return savedDocument as T;
     } catch (error) {
       this.logger.error('Error creating document:', error);
       throw error;
@@ -175,25 +175,20 @@ export abstract class BaseRepository<T extends BaseEntity> {
    * @param options - Query options
    * @returns Updated document or null
    */
-  async update(
-    id: string,
-    data: UpdateQuery<T>,
-    options?: QueryOptions
-  ): Promise<T | null> {
+  async update(id: string, data: UpdateQuery<T>, options?: QueryOptions): Promise<T | null> {
     try {
       const updateData = {
         ...data,
         updatedAt: new Date(),
       };
 
-      let query = this.model.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true, runValidators: true }
-      );
+      let query: any = this.model.findByIdAndUpdate(id, updateData, {
+        new: true,
+        runValidators: true,
+      });
 
       if (options?.populate) {
-        query = query.populate(options.populate as any);
+        query = query.populate(options.populate);
       }
 
       if (options?.select) {
@@ -201,14 +196,14 @@ export abstract class BaseRepository<T extends BaseEntity> {
       }
 
       const updatedDocument = await query.exec();
-      
+
       if (updatedDocument) {
         this.logger.log(`Updated document with ID: ${id}`);
       } else {
         this.logger.warn(`Document with ID ${id} not found for update`);
       }
 
-      return updatedDocument;
+      return updatedDocument as T | null;
     } catch (error) {
       this.logger.error(`Error updating document with ID ${id}:`, error);
       throw error;
@@ -223,11 +218,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
    * @returns Updated document
    * @throws Error if document not found
    */
-  async updateOrThrow(
-    id: string,
-    data: UpdateQuery<T>,
-    options?: QueryOptions
-  ): Promise<T> {
+  async updateOrThrow(id: string, data: UpdateQuery<T>, options?: QueryOptions): Promise<T> {
     const updatedDocument = await this.update(id, data, options);
     if (!updatedDocument) {
       throw new Error(`Document with ID ${id} not found for update`);
@@ -278,7 +269,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
   async hardDelete(id: string): Promise<boolean> {
     try {
       const result = await this.model.findByIdAndDelete(id);
-      
+
       if (result) {
         this.logger.log(`Hard deleted document with ID: ${id}`);
         return true;
@@ -328,10 +319,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
    * @param options - Query builder options
    * @returns MongoDB filter query
    */
-  protected buildFilterQuery(
-    query: PaginationQueryDto,
-    options?: QueryBuilderOptions
-  ): any {
+  protected buildFilterQuery(query: PaginationQueryDto, options?: QueryBuilderOptions): any {
     const filter: any = { active: { $ne: false } };
 
     // Add search functionality
@@ -364,7 +352,7 @@ export abstract class BaseRepository<T extends BaseEntity> {
 
     if (query.sort) {
       const [field, order] = query.sort.split(':');
-      return { [field]: order === 'desc' ? -1 : 1 };
+      return { [field as string]: order === 'desc' ? -1 : 1 };
     }
 
     return { createdAt: -1 };

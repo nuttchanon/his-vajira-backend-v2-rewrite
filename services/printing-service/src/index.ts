@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
-import { connect, disconnect } from 'mongoose';
+import { connect, disconnect, set } from 'mongoose';
 import { AppModule } from './app.module';
 import { PrintingService } from './printing/printing.service';
 import { PrintingRepository } from './printing/printing.repository';
@@ -18,7 +18,10 @@ class PrintingMoleculerService {
         enabled: true,
         reporter: {
           type: 'Prometheus',
-          options: { port: 3040, path: '/metrics' },
+          options: {
+            port: parseInt(process.env.PRINTING_METRICS_PORT || '3040'),
+            path: '/metrics',
+          },
         },
       },
     });
@@ -27,6 +30,9 @@ class PrintingMoleculerService {
   async start() {
     try {
       console.log('Starting Printing Service...');
+
+      // Configure Mongoose to suppress deprecation warnings
+      set('strictQuery', false);
 
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
         maxPoolSize: 10,

@@ -17,7 +17,7 @@ class ApiGatewayMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3031,
+            port: parseInt(process.env.API_GATEWAY_METRICS_PORT || '3031'),
             path: '/metrics',
           },
         },
@@ -86,7 +86,10 @@ class ApiGatewayMoleculerService {
       res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept,Authorization'
+      );
       next();
     });
 

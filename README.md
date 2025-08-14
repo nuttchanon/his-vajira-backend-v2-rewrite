@@ -2,6 +2,20 @@
 
 A modern, microservices-based Hospital Information System (HIS) backend built with NestJS, TypeScript, and MongoDB.
 
+## 📚 Documentation
+
+📖 **Complete documentation is available in the [docs/](./docs/) folder**, organized by workflow:
+
+- 🚀 **[Development](./docs/development/)** - Setup, coding standards, and development workflows
+- 🚢 **[Deployment](./docs/deployment/)** - Production deployment, CI/CD, and monitoring
+- 🏗️ **[Architecture](./docs/architecture/)** - System design, patterns, and technical decisions
+- 🔌 **[API](./docs/api/)** - API documentation, endpoints, and integration guides
+- 🧪 **[Testing](./docs/testing/)** - Testing strategies, tools, and best practices
+- 🔧 **[Troubleshooting](./docs/troubleshooting/)** - Common issues, debugging, and problem resolution
+- 📖 **[Guides](./docs/guides/)** - Step-by-step tutorials and best practices
+
+**Quick Start**: [Development Setup](./docs/development/) | [API Reference](./docs/api/) | [Troubleshooting](./docs/troubleshooting/)
+
 ## 🏗️ Architecture Overview
 
 This project follows a **domain-driven design (DDD)** approach with a **microservices architecture**. Each service is organized by domain rather than technical layers, promoting better maintainability and scalability.
@@ -33,13 +47,6 @@ his-vajira-backend-v2-rewrite/
 │   ├── auth-service/             # Authentication & Authorization
 │   │   └── src/
 │   │       └── auth/             # Auth domain
-│   │           ├── auth.controller.ts
-│   │           ├── auth.service.ts
-│   │           ├── auth.repository.ts
-│   │           ├── auth.module.ts
-│   │           ├── auth.dto.ts
-│   │           ├── user.entity.ts
-│   │           └── jwt.strategy.ts
 │   ├── patient-service/          # Patient management
 │   │   └── src/
 │   │       └── patient/          # Patient domain

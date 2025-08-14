@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
-import { connect, disconnect } from 'mongoose';
+import { connect, disconnect, set } from 'mongoose';
 import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
 import { UserRepository } from './auth/user.repository';
@@ -20,7 +20,7 @@ class AuthMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3031,
+            port: parseInt(process.env.AUTH_METRICS_PORT || '3031'),
             path: '/metrics',
           },
         },
@@ -31,6 +31,9 @@ class AuthMoleculerService {
   async start() {
     try {
       console.log('Starting Auth Service...');
+
+      // Configure Mongoose to suppress deprecation warnings
+      set('strictQuery', false);
 
       // Connect to MongoDB
       await connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/his', {
