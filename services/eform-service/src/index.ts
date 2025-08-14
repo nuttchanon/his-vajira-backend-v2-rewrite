@@ -1,10 +1,14 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
 import { EformService } from './eform/eform.service';
 import { EformController } from './eform/eform.controller';
 import { Eform } from './eform/entity/eform.entity';
+
+// Load environment variables
+config();
 
 class EformMoleculerService {
   private broker: ServiceBroker;
@@ -20,7 +24,7 @@ class EformMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3037,
+            port: parseInt(process.env.EFORM_METRICS_PORT || '3037'),
             path: '/metrics',
           },
         },

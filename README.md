@@ -32,9 +32,9 @@ This project follows a **domain-driven design (DDD)** approach with a **microser
 ```
 his-vajira-backend-v2-rewrite/
 ├── packages/
-│   └── shared/                    # Shared utilities and base classes
+│   └── shared/                   # Shared utilities and base classes
 │       ├── src/
-│       │   ├── constants/         # Error codes, status codes
+│       │   ├── constants/        # Error codes, status codes
 │       │   ├── dto/              # Base DTOs, pagination
 │       │   ├── entities/         # Base entities, FHIR types
 │       │   ├── enums/            # Common enums

@@ -1,10 +1,14 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
 import { EncounterService } from './encounter/encounter.service';
 import { EncounterController } from './encounter/encounter.controller';
 import { Encounter } from './encounter/entity/encounter.entity';
+
+// Load environment variables
+config();
 
 class EncounterMoleculerService {
   private broker: ServiceBroker;
@@ -20,7 +24,7 @@ class EncounterMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3034,
+            port: parseInt(process.env.ENCOUNTER_METRICS_PORT || '3034'),
             path: '/metrics',
           },
         },
@@ -130,7 +134,10 @@ class EncounterMoleculerService {
       res.header('Access-Control-Allow-Origin', process.env.CORS_ORIGIN || 'http://localhost:3000');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization');
+      res.header(
+        'Access-Control-Allow-Headers',
+        'Origin,X-Requested-With,Content-Type,Accept,Authorization'
+      );
       next();
     });
 

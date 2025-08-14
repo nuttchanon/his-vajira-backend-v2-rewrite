@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect, set } from 'mongoose';
@@ -6,9 +7,12 @@ import { AppModule } from './app.module';
 import { AuthService } from './auth/auth.service';
 import { UserRepository } from './auth/user.repository';
 
+// Load environment variables
+config();
+
 class AuthMoleculerService {
   private broker: ServiceBroker;
-  private authService: AuthService;
+  private authService!: AuthService;
 
   constructor() {
     this.broker = new ServiceBroker({
@@ -20,7 +24,7 @@ class AuthMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: parseInt(process.env.AUTH_METRICS_PORT || '3031'),
+            port: parseInt(process.env.AUTH_METRICS_PORT || '3032'),
             path: '/metrics',
           },
         },

@@ -1,10 +1,14 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
 import { AppModule } from './app.module';
 import { PatientService } from './patient/patient.service';
 import { PatientRepository } from './patient/patient.repository';
+
+// Load environment variables
+config();
 
 class PatientMoleculerService {
   private broker: ServiceBroker;
@@ -20,7 +24,7 @@ class PatientMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3030,
+            port: parseInt(process.env.PATIENT_METRICS_PORT || '3030'),
             path: '/metrics',
           },
         },

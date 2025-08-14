@@ -1,10 +1,14 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { ServiceBroker } from 'moleculer';
 import { connect, disconnect } from 'mongoose';
 import { OrderService } from './order/order.service';
 import { OrderController } from './order/order.controller';
 import { Order } from './order/entity/order.entity';
+
+// Load environment variables
+config();
 
 class OrderMoleculerService {
   private broker: ServiceBroker;
@@ -20,7 +24,7 @@ class OrderMoleculerService {
         reporter: {
           type: 'Prometheus',
           options: {
-            port: 3032,
+            port: parseInt(process.env.ORDER_METRICS_PORT || '3041'),
             path: '/metrics',
           },
         },
